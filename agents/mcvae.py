@@ -18,7 +18,6 @@ from datasets.noteDataset import NoteDataset
 
 from tensorboardX import SummaryWriter
 from utils.metrics import AverageMeter, AverageMeterList, evaluate
-from utils.misc import print_cuda_statistics
 
 cudnn.benchmark = True
 
@@ -29,15 +28,16 @@ class MCVAE(object):
 
         self.logger = logging.getLogger("MC_VAE")
 
+        self.batch_size = self.config.batch_size
+
         # define models ( generator and discriminator)
         self.model = Model()
         self.discriminator = Discriminator()
 
         # define dataloader
         self.dataset = NoteDataset(self.config.root_path, self.config)
-        self.dataloader = DataLoader(self.dataset, batch_size=self.config.batch_size, shuffle=True, num_workers=3)
-
-        self.batch_size = self.config.batch_size
+        self.dataloader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=False, num_workers=3,
+                                     pin_memory=self.config.pin_memory)
 
         # define loss
         self.loss = Loss()
@@ -71,8 +71,7 @@ class MCVAE(object):
         if self.cuda:
             self.logger.info("Program will run on *****GPU-CUDA***** ")
             torch.cuda.manual_seed_all(self.manual_seed)
-            print_cuda_statistics()
-            torch.cuda.set_device(self.config.gpu_device)
+            torch.cuda.set_device(self.config.gpu_device[0])
             self.fixed_noise = self.fixed_noise.cuda(async=self.config.async_loading)
             self.device = torch.device("cuda")
 
@@ -83,6 +82,10 @@ class MCVAE(object):
         self.model = self.model.to(self.device)
         self.discriminator = self.discriminator.to(self.device)
         self.loss = self.loss.to(self.device)
+
+        if len(self.config.gpu_device) > 1:
+            self.model = nn.DataParallel(self.model, device_ids=self.config.gpu_device)
+            self.discriminator = nn.DataParallel(self.discriminator, device_ids=self.config.gpu_device)
 
         # Model Loading from the latest checkpoint if not found start from scratch.
         self.load_checkpoint(self.config.checkpoint_file)
@@ -174,9 +177,9 @@ class MCVAE(object):
 
             ####################
             targets_D.fill_(1.0)
-            f_lossD = self.lossD(f_logits, targets_D)
+            gan_loss = self.lossD(f_logits, targets_D)
 
-            loss_model = self.loss(gen_note, note, mean, var, f_lossD)
+            loss_model = self.loss(gen_note, note, mean, var, gan_loss)
             loss_model.backward()
             self.optimVAE.step()
 
@@ -202,7 +205,7 @@ class MCVAE(object):
         z, _, _ = self.model.encoder(self.zero_note)
         out_img = self.model.decoder(self.fixed_noise + z + self.model.position_embedding(330))
 
-        self.summary_writer.add_image('train/generated_image', out_img, self.current_iteration, dataformats='HWC')
+        self.summary_writer.add_image('train/generated_image', out_img, self.current_iteration)
 
         tqdm_batch.close()
 
