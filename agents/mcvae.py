@@ -84,6 +84,7 @@ class MCVAE(object):
         self.model = self.model.to(self.device)
         self.discriminator = self.discriminator.to(self.device)
         self.loss = self.loss.to(self.device)
+        self.lossD = self.lossD.to(self.device)
 
         if len(self.config.gpu_device) > 1:
             self.model = nn.DataParallel(self.model, device_ids=self.config.gpu_device)
