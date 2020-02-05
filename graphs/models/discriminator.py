@@ -69,7 +69,7 @@ class Discriminator(nn.Module):
         self.apply(weights_init)
 
     def forward(self, x):
-        x = x.view(-1, 384, 96, 1)
+        x = x.view(-1, 1, 384, 96)
 
         # chord feature extraction
         chord_x = x.view(-1, 384, 12, 8)
