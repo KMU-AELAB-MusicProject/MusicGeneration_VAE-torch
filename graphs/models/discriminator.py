@@ -62,6 +62,7 @@ class Discriminator(nn.Module):
         self.batch_norm4 = nn.BatchNorm2d(32)
 
         self.conv3 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=2, padding=1, bias=False)
+        self.conv4 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=2, padding=1, bias=False)
 
         self.linear1 = nn.Linear(64 * 3, 128, bias=True)
         self.linear2 = nn.Linear(128, 1, bias=True)
@@ -120,6 +121,7 @@ class Discriminator(nn.Module):
         out = self.batch_norm4(out)
 
         out = self.relu(self.conv3(out))
+        out = self.relu(self.conv4(out))
         out = self.avg(out)
 
         out = torch.cat((chord_output, onoff_output, out), dim=1)
