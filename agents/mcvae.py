@@ -180,7 +180,8 @@ class MCVAE(object):
             ####################
             self.model.zero_grad()
             self.discriminator.zero_grad()
-            targets_D = torch.randn(note.size(0), ).cuda()
+            zeros = torch.randn(note.size(0), ).fill_(0.).cuda()
+            ones = torch.randn(note.size(0), ).fill_(1.).cuda()
 
             ####################
             gen_note, mean, var = self.model(note, pre_note, position)
@@ -188,18 +189,15 @@ class MCVAE(object):
             r_logits = self.discriminator(note)
 
             ####################
-            targets_D.fill_(1.0)
-            gan_loss = self.lossD(f_logits, targets_D)
+            gan_loss = self.lossD(f_logits, ones)
 
             loss_model = self.loss(gen_note, note, mean, var, gan_loss)
             loss_model.backward()
             self.optimVAE.step()
 
             ####################
-            targets_D.fill_(1.0)
-            r_lossD = self.lossD(r_logits, targets_D)
-            targets_D.fill_(0.0)
-            f_lossD = self.lossD(f_logits, targets_D)
+            r_lossD = self.lossD(r_logits, ones)
+            f_lossD = self.lossD(f_logits, zeros)
 
             loss_D = r_lossD + f_lossD
             loss_D.backward()
