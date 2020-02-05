@@ -101,7 +101,7 @@ class MCVAE(object):
         position = np.concatenate([sample['position'] for sample in samples], axis=0)
 
         return tuple([torch.tensor(note, dtype=torch.float), torch.tensor(pre_note, dtype=torch.float),
-                      torch.tensor(position, dtype=torch.long])
+                      torch.tensor(position, dtype=torch.long)])
 
     def load_checkpoint(self, file_name):
         filename = self.config.checkpoint_dir + file_name

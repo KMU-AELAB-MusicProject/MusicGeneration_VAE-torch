@@ -9,7 +9,7 @@ class Config(object):
     async_loading = True
     pin_memory = True
 
-    root_path = '/home/algorithm/'
+    root_path = '/home/algorithm/MusicGeneration_VAE-torch'
     data_path = 'datasets/data'
     checkpoint_dir = 'model'
     checkpoint_file = 'checkpoint.pth.tar'
