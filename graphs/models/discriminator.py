@@ -9,6 +9,7 @@ class Discriminator(nn.Module):
         super().__init__()
 
         self.relu = nn.ReLU(inplace=True)
+        self.sigmoid = nn.Sigmoid()
 
         ###########################
         self.chord_conv1 = nn.Conv2d(in_channels=1, out_channels=8, kernel_size=3, stride=(2, 1), padding=1,
