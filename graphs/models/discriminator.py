@@ -129,6 +129,6 @@ class Discriminator(nn.Module):
         out = out.view(-1, 64 * 3)
 
         out = self.relu(self.linear1(out))
-        logits = self.linear2(out)
+        logits = self.sigmoid(self.linear2(out))
 
         return logits.view(-1)
