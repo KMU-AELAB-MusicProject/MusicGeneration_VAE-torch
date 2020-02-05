@@ -192,7 +192,7 @@ class MCVAE(object):
             gan_loss = self.lossD(f_logits, ones)
 
             loss_model = self.loss(gen_note, note, mean, var, gan_loss)
-            loss_model.backward()
+            loss_model.backward(retain_graph=True)
             self.optimVAE.step()
 
             ####################
@@ -200,7 +200,7 @@ class MCVAE(object):
             f_lossD = self.lossD(f_logits, zeros)
 
             loss_D = r_lossD + f_lossD
-            loss_D.backward()
+            loss_D.backward(retain_graph=True)
             self.optimD.step()
 
             ####################
