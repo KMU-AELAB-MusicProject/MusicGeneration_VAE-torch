@@ -46,7 +46,7 @@ class Decoder(nn.Module):
         time_out = self.leaky(self.time1(x))
         time_out = self.leaky(self.time2(time_out))
 
-        out = torch.cat((pitch_out, time_out), dim=11)
+        out = torch.cat((pitch_out, time_out), dim=1)
 
         out = self.leaky(self.fit1(out))
         out = self.batch_norm1(out)
