@@ -180,7 +180,7 @@ class MCVAE(object):
             ####################
             self.model.zero_grad()
             self.discriminator.zero_grad()
-            targets_D = torch.randn(note.size(0), )
+            targets_D = torch.randn(note.size(0), ).cuda()
 
             ####################
             gen_note, mean, var = self.model(note, pre_note, position)

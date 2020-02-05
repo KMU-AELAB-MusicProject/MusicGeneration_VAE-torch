@@ -130,4 +130,4 @@ class Discriminator(nn.Module):
         out = self.relu(self.linear1(out))
         logits = self.linear2(out)
 
-        return logits
+        return logits.view(-1)
