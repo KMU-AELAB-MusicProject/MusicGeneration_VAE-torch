@@ -53,15 +53,15 @@ class Discriminator(nn.Module):
         self.time2 = nn.Conv2d(in_channels=8, out_channels=8, kernel_size=(1, 4), stride=(1, 2), padding=[0, 1],
                                bias=False)
 
-        self.fit1 = nn.Conv2d(in_channels=8, out_channels=16, kernel_size=1, stride=1,  bias=False)
+        self.fit1 = nn.Conv2d(in_channels=16, out_channels=8, kernel_size=1, stride=1,  bias=False)
         self.batch_norm3 = nn.BatchNorm2d(8)
 
-        self.conv1 = nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, stride=1, padding=2, bias=False)
-        self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=1, padding=2, bias=False)
+        self.conv1 = nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, stride=2, padding=1, bias=False)
+        self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=2, padding=1, bias=False)
         self.fit2 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=1, stride=1, bias=False)
         self.batch_norm4 = nn.BatchNorm2d(32)
 
-        self.conv3 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=2, bias=False)
+        self.conv3 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=2, padding=1, bias=False)
 
         self.linear1 = nn.Linear(64 * 3, 128, bias=True)
         self.linear2 = nn.Linear(128, 1, bias=True)
@@ -114,7 +114,7 @@ class Discriminator(nn.Module):
         out = self.batch_norm3(out)
 
         out = self.relu(self.conv1(out))
-        out = self.relu(self.con2v(out))
+        out = self.relu(self.conv2(out))
 
         out = self.relu(self.fit2(out))
         out = self.batch_norm4(out)
