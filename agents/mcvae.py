@@ -54,8 +54,8 @@ class MCVAE(object):
         self.current_iteration = 0
         self.best_error = 9999999999.
 
-        self.fixed_noise = Variable(torch.randn(1, 384, 96, 1))
-        self.zero_note = Variable(torch.zeros(1, 384, 96, 1))
+        self.fixed_noise = Variable(torch.randn(1, 1, 384, 96))
+        self.zero_note = Variable(torch.zeros(1, 1, 384, 96))
 
         # set cuda flag
         self.is_cuda = torch.cuda.is_available()
@@ -155,7 +155,8 @@ class MCVAE(object):
             self.current_epoch = epoch
             is_best = self.train_one_epoch()
             self.save_checkpoint(self.config.checkpoint_file, is_best)
-            torch.optim.lr_scheduler.MultiplicativeLR()
+            torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimVAE, mode='min', factor=0.8, cooldown=4)
+            torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimD, mode='min', factor=0.8, cooldown=4)
 
     def train_one_epoch(self):
         tqdm_batch = tqdm(self.dataloader, total=self.dataset.num_iterations,
@@ -212,10 +213,9 @@ class MCVAE(object):
             self.summary_writer.add_scalar("epoch/Generator_loss", epoch_loss.val, self.current_iteration)
             self.summary_writer.add_scalar("epoch/Discriminator_loss", epoch_lossD.val, self.current_iteration)
 
-        z, _, _ = self.model.encoder(self.zero_note)
-        out_img = self.model.decoder(self.fixed_noise + z + self.model.position_embedding(330))
-
-        self.summary_writer.add_image('train/generated_image', torch.gt(out_img, 0.35).type('torch.FloatTensor') * 255,
+        out_img, _, _ = self.model(self.zero_note, self.zero_note, torch.tensor([300], dtype=torch.long).cuda())
+        self.summary_writer.add_image('train/generated_image',
+                                      torch.gt(out_img, 0.35).type('torch.FloatTensor').view(1, 384, 96) * 255,
                                       self.current_iteration)
 
         tqdm_batch.close()
