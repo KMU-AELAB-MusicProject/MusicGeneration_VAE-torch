@@ -12,17 +12,17 @@ class Encoder(nn.Module):
         self.relu = nn.ReLU(inplace=True)
 
         self.pitch1 = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=(1, 4), stride=(1, 2),
-                                padding=1, bias=False)
+                                padding=[0, 1], bias=False)
         self.pitch2 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=(4, 1), stride=(2, 1),
-                                padding=1, bias=False)
+                                padding=[1, 0], bias=False)
 
         self.time1 = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=(4, 1), stride=(2, 1),
-                               padding=1, bias=False)
+                               padding=[1, 0], bias=False)
         self.time2 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=(1, 4), stride=(1, 2),
-                               padding=1, bias=False)
+                               padding=[0, 1], bias=False)
 
         self.reduce1 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=2, padding=1, bias=False)
-        self.fit1 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=1, stride=1, padding=1, bias=False)
+        self.fit1 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=1, stride=1, bias=False)
 
         self.batch_norm1 = nn.BatchNorm2d(64)
 
@@ -30,7 +30,7 @@ class Encoder(nn.Module):
         self.conv2 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1, bias=False)
 
         self.reduce2 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=2, padding=1, bias=False)
-        self.fit2 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=1, stride=1, padding=1, bias=False)
+        self.fit2 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=1, stride=1, bias=False)
 
         self.batch_norm2 = nn.BatchNorm2d(128)
 
@@ -38,7 +38,7 @@ class Encoder(nn.Module):
         self.conv4 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1, bias=False)
 
         self.reduce3 = nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=2, padding=1, bias=False)
-        self.fit3 = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=1, stride=1, padding=1, bias=False)
+        self.fit3 = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=1, stride=1, bias=False)
 
         self.batch_norm3 = nn.BatchNorm2d(256)
 
@@ -46,7 +46,7 @@ class Encoder(nn.Module):
         self.conv6 = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1, bias=False)
 
         self.reduce4 = nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, stride=2, padding=1, bias=False)
-        self.fit4 = nn.Conv2d(in_channels=512, out_channels=512, kernel_size=1, stride=1, padding=1, bias=False)
+        self.fit4 = nn.Conv2d(in_channels=512, out_channels=512, kernel_size=1, stride=1, bias=False)
 
         self.batch_norm4 = nn.BatchNorm2d(512)
 
@@ -63,15 +63,13 @@ class Encoder(nn.Module):
         return mean + eps * std
 
     def forward(self, x):
-        x = x.view(-1, 384, 96, 1)
-
         pitch_out = self.leaky(self.pitch1(x))
         pitch_out = self.leaky(self.pitch2(pitch_out))
 
         time_out = self.leaky(self.time1(x))
         time_out = self.leaky(self.time2(time_out))
 
-        out = torch.cat((pitch_out, time_out), dim=-1)
+        out = torch.cat((pitch_out, time_out), dim=1)
 
         out = self.leaky(self.reduce1(out))
         out = self.leaky(self.fit1(out))
@@ -96,7 +94,7 @@ class Encoder(nn.Module):
 
         out = self.relu(self.reduce4(out + out3))
         out = self.relu(self.fit4(out))
-        out4 = self.batch_norm4(out)
+        out4 = self.avg(self.batch_norm4(out))
 
         mean = self.mean(out4.view(-1, 512))
         var = self.var(out4.view(-1, 512))

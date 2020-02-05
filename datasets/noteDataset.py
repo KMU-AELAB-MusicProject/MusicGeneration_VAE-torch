@@ -8,6 +8,7 @@ class NoteDataset(Dataset):
     def __init__(self, root_dir, config):
         self.root_dir = root_dir
         self.file_list = os.listdir(os.path.join(self.root_dir, config.data_path))
+        self.config = config
 
         self.num_iterations = (len(self.file_list) + config.batch_size - 1) // config.batch_size
 
@@ -15,7 +16,7 @@ class NoteDataset(Dataset):
         return len(self.file_list)
 
     def __getitem__(self, idx):
-        file_name = os.path.join(self.root_dir, self.file_list[idx])
+        file_name = os.path.join(self.root_dir, self.config.data_path, self.file_list[idx])
 
         with np.load(file_name) as data:
-            return tuple([data['note'], data['pre_note'], data['position']])
+            return {'note': data['note'], 'pre_note': data['pre_note'], 'position': data['position']}

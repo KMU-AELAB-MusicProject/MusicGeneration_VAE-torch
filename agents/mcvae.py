@@ -37,20 +37,22 @@ class MCVAE(object):
         # define dataloader
         self.dataset = NoteDataset(self.config.root_path, self.config)
         self.dataloader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=False, num_workers=3,
-                                     pin_memory=self.config.pin_memory)
+                                     pin_memory=self.config.pin_memory, collate_fn=self.make_batch)
 
         # define loss
         self.loss = Loss()
         self.lossD = DLoss()
 
         # define optimizers for both generator and discriminator
-        self.optimVAE = torch.optim.Adam(self.model.parameters(), lr=self.config.learning_rate)
-        self.optimD = torch.optim.Adam(self.discriminator.parameters(), lr=self.config.learning_rate)
+        self.lr = self.config.learning_rate
+        self.lrD = self.config.learning_rate
+        self.optimVAE = torch.optim.Adam(self.model.parameters(), lr=self.lr)
+        self.optimD = torch.optim.Adam(self.discriminator.parameters(), lr=self.lrD)
 
         # initialize counter
         self.current_epoch = 0
         self.current_iteration = 0
-        self.best_valid_mean_iou = 0
+        self.best_error = 9999999999.
 
         self.fixed_noise = Variable(torch.randn(1, 384, 96, 1))
         self.zero_note = Variable(torch.zeros(1, 384, 96, 1))
@@ -92,6 +94,14 @@ class MCVAE(object):
 
         # Summary Writer
         self.summary_writer = SummaryWriter(log_dir=self.config.summary_dir, comment='MC_VAE')
+
+    def make_batch(self, samples):
+        note = np.concatenate([sample['note'] for sample in samples], axis=0)
+        pre_note = np.concatenate([sample['pre_note'] for sample in samples], axis=0)
+        position = np.concatenate([sample['position'] for sample in samples], axis=0)
+
+        return tuple([torch.tensor(note, dtype=torch.float), torch.tensor(pre_note, dtype=torch.float),
+                      torch.tensor(position, dtype=torch.long])
 
     def load_checkpoint(self, file_name):
         filename = self.config.checkpoint_dir + file_name
@@ -142,8 +152,9 @@ class MCVAE(object):
     def train(self):
         for epoch in range(self.current_epoch, self.config.epoch):
             self.current_epoch = epoch
-            self.train_one_epoch()
-            self.save_checkpoint(self.config.checkpoint_file)
+            is_best = self.train_one_epoch()
+            self.save_checkpoint(self.config.checkpoint_file, is_best)
+            torch.optim.lr_scheduler.MultiplicativeLR()
 
     def train_one_epoch(self):
         tqdm_batch = tqdm(self.dataloader, total=self.dataset.num_iterations,
@@ -155,7 +166,7 @@ class MCVAE(object):
         epoch_loss = AverageMeter()
         epoch_lossD = AverageMeter()
 
-        for curr_it, note, pre_note, position in enumerate(tqdm_batch):
+        for curr_it, (note, pre_note, position) in enumerate(tqdm_batch):
             if self.cuda:
                 note = note.cuda(async=self.config.async_loading)
                 pre_note = pre_note.cuda(async=self.config.async_loading)
@@ -205,12 +216,19 @@ class MCVAE(object):
         z, _, _ = self.model.encoder(self.zero_note)
         out_img = self.model.decoder(self.fixed_noise + z + self.model.position_embedding(330))
 
-        self.summary_writer.add_image('train/generated_image', out_img, self.current_iteration)
+        self.summary_writer.add_image('train/generated_image', torch.gt(out_img, 0.35).type('torch.FloatTensor') * 255,
+                                      self.current_iteration)
 
         tqdm_batch.close()
 
         self.logger.info("Training at epoch-" + str(self.current_epoch) + " | " + "Discriminator loss: " +
                          str(epoch_lossD.val) + " - Generator Loss-: " + str(epoch_loss.val))
+
+        if epoch_loss.val < self.best_error:
+            self.best_error = epoch_loss.val
+            return True
+        else:
+            return False
 
     def finalize(self):
         self.logger.info("Please wait while finalizing the operation.. Thank you")

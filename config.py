@@ -1,10 +1,10 @@
 class Config(object):
     epoch = 1000
-    batch_size = 32
-    learning_rate = 0.0001
+    batch_size = 2
+    learning_rate = 0.001
 
     cuda = True
-    gpu_device = '0'
+    gpu_device = [0]
 
     async_loading = True
     pin_memory = True

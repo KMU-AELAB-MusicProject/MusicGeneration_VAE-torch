@@ -31,6 +31,13 @@ class Initializer:
                 except:
                     pass
 
+            elif isinstance(m, nn.ConvTranspose2d):
+                initialization(m.weight.data, **kwargs)
+                try:
+                    initialization(m.bias.data)
+                except:
+                    pass
+
             elif isinstance(m, nn.Linear):
                 initialization(m.weight.data, **kwargs)
                 try:

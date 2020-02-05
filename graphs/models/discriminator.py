@@ -11,52 +11,57 @@ class Discriminator(nn.Module):
         self.relu = nn.ReLU(inplace=True)
 
         ###########################
-        self.chord_conv1 = nn.Conv2d(in_channels=1, out_channels=8, kernel_size=3, stride=(2, 1), padding=1, bias=False)
-        self.chord_conv2 = nn.Conv2d(in_channels=8, out_channels=8, kernel_size=3, stride=(2, 1), padding=1, bias=False)
+        self.chord_conv1 = nn.Conv2d(in_channels=1, out_channels=8, kernel_size=3, stride=(2, 1), padding=[1, 0],
+                                     bias=False)
+        self.chord_conv2 = nn.Conv2d(in_channels=8, out_channels=8, kernel_size=3, stride=(2, 1), padding=[1, 0],
+                                     bias=False)
         self.batch_norm1 = nn.BatchNorm2d(8)
 
-        self.chord_conv3 = nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, stride=(2, 1), padding=1, bias=False)
+        self.chord_conv3 = nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, stride=(2, 1), padding=[1, 0],
+                                     bias=False)
         self.chord_conv4 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=2, padding=1, bias=False)
-        self.chord_fit = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=1, stride=1, padding=1, bias=False)
+        self.chord_fit = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=1, stride=1, bias=False)
         self.chord_conv5 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=2, padding=1, bias=False)
 
         self.avg = nn.AvgPool2d(kernel_size=(12, 3))
 
         ###########################
-        self.onoff_conv1 = nn.Conv2d(in_channels=1, out_channels=8, kernel_size=3, stride=(2, 1), padding=1, bias=False)
-        self.onoff_conv2 = nn.Conv2d(in_channels=8, out_channels=8, kernel_size=3, stride=(2, 1), padding=1, bias=False)
+        self.onoff_conv1 = nn.Conv2d(in_channels=1, out_channels=8, kernel_size=3, stride=(2, 1), padding=[1, 0],
+                                     bias=False)
+        self.onoff_conv2 = nn.Conv2d(in_channels=8, out_channels=8, kernel_size=3, stride=(2, 1), padding=[1, 0],
+                                     bias=False)
         self.batch_norm2 = nn.BatchNorm2d(8)
 
-        self.onoff_conv3 = nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, stride=(2, 1), padding=1, bias=False)
-        self.onoff_conv4 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=(2, 1), padding=1, bias=False)
-        self.onoff_fit = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=1, stride=1, padding=1, bias=False)
-        self.onoff_conv5 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=(2, 1), padding=1, bias=False)
+        self.onoff_conv3 = nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, stride=(2, 1), padding=[1, 0],
+                                     bias=False)
+        self.onoff_conv4 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=(2, 1), padding=[1, 0],
+                                     bias=False)
+        self.onoff_fit = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=1, stride=1, bias=False)
+        self.onoff_conv5 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=(2, 1), padding=[1, 0],
+                                     bias=False)
 
         self.onoff_avg = nn.AvgPool2d(kernel_size=(12, 1))
 
         ###########################
-        self.pitch1 = nn.Conv2d(in_channels=1, out_channels=8, kernel_size=(1, 4), stride=(1, 2),
-                                padding=1, bias=False)
-        self.pitch2 = nn.Conv2d(in_channels=8, out_channels=8, kernel_size=(4, 1), stride=(2, 1),
-                                padding=1, bias=False)
+        self.pitch1 = nn.Conv2d(in_channels=1, out_channels=8, kernel_size=(1, 4), stride=(1, 2), padding=[0, 1],
+                                bias=False)
+        self.pitch2 = nn.Conv2d(in_channels=8, out_channels=8, kernel_size=(4, 1), stride=(2, 1), padding=[1, 0],
+                                bias=False)
 
-        self.time1 = nn.Conv2d(in_channels=1, out_channels=8, kernel_size=(4, 1), stride=(2, 1),
-                               padding=1, bias=False)
-        self.time2 = nn.Conv2d(in_channels=8, out_channels=8, kernel_size=(1, 4), stride=(1, 2),
-                               padding=1, bias=False)
+        self.time1 = nn.Conv2d(in_channels=1, out_channels=8, kernel_size=(4, 1), stride=(2, 1), padding=[1, 0],
+                               bias=False)
+        self.time2 = nn.Conv2d(in_channels=8, out_channels=8, kernel_size=(1, 4), stride=(1, 2), padding=[0, 1],
+                               bias=False)
 
-        self.fit1 = nn.Conv2d(in_channels=8, out_channels=8, kernel_size=1, stride=1, padding=1, bias=False)
+        self.fit1 = nn.Conv2d(in_channels=8, out_channels=8, kernel_size=1, stride=1,  bias=False)
         self.batch_norm3 = nn.BatchNorm2d(8)
 
-        self.conv1 = nn.Conv2d(in_channels=8, out_channels=16, kernel_size=(4, 1), stride=(2, 1),
-                               padding=1, bias=False)
-        self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=(1, 4), stride=(1, 2),
-                               padding=1, bias=False)
-        self.fit2 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=1, stride=1, padding=1, bias=False)
+        self.conv1 = nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, stride=1, padding=2, bias=False)
+        self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=1, padding=2, bias=False)
+        self.fit2 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=1, stride=1, bias=False)
         self.batch_norm4 = nn.BatchNorm2d(32)
 
-        self.conv3 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=(1, 4), stride=(1, 2),
-                               padding=1, bias=False)
+        self.conv3 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=2, bias=False)
 
         self.linear1 = nn.Linear(64 * 3, 128, bias=True)
         self.linear2 = nn.Linear(128, 1, bias=True)
@@ -103,7 +108,7 @@ class Discriminator(nn.Module):
         time = self.relu(self.time1(x))
         time = self.relu(self.time2(time))
 
-        out = torch.cat((pitch, time), dim=-1)
+        out = torch.cat((pitch, time), dim=1)
 
         out = self.relu(self.fit1(out))
         out = self.batch_norm3(out)
@@ -117,7 +122,7 @@ class Discriminator(nn.Module):
         out = self.relu(self.con3(out))
         out = self.avg(out)
 
-        out = torch.cat((chord_outout, onoff_output, out), dim=-1)
+        out = torch.cat((chord_outout, onoff_output, out), dim=1)
         out = out.view(-1, 64 * 3)
 
         out = self.relu(self.linear1(out))
