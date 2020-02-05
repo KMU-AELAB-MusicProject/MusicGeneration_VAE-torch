@@ -25,14 +25,18 @@ class Decoder(nn.Module):
         self.fit1 = nn.Conv2d(in_channels=512, out_channels=256, kernel_size=1, stride=1, bias=False)
         self.batch_norm1 = nn.BatchNorm2d(256)
 
-        self.deconv1 = nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=3, stride=2, bias=False)
-        self.deconv2 = nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=3, stride=2, bias=False)
+        self.deconv1 = nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=3, stride=2,
+                                          padding=1, output_padding=1, bias=True)
+        self.deconv2 = nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=3, stride=2,
+                                          padding=1, output_padding=1, bias=True)
 
         self.fit2 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=1, stride=1, bias=False)
         self.batch_norm2 = nn.BatchNorm2d(64)
 
-        self.deconv3 = nn.ConvTranspose2d(in_channels=64, out_channels=32, kernel_size=3, stride=2, bias=False)
-        self.deconv4 = nn.ConvTranspose2d(in_channels=32, out_channels=16, kernel_size=3, stride=2, bias=False)
+        self.deconv3 = nn.ConvTranspose2d(in_channels=64, out_channels=32, kernel_size=3, stride=2,
+                                          padding=1, output_padding=1, bias=True)
+        self.deconv4 = nn.ConvTranspose2d(in_channels=32, out_channels=16, kernel_size=3, stride=2,
+                                          padding=1, output_padding=1, bias=True)
 
         self.fit3 = nn.Conv2d(in_channels=16, out_channels=1, kernel_size=1, stride=1, bias=False)
 

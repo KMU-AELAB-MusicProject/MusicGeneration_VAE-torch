@@ -72,8 +72,8 @@ class Discriminator(nn.Module):
         x = x.view(-1, 1, 384, 96)
 
         # chord feature extraction
-        chord_x = x.view(-1, 384, 12, 8)
-        chord_x = torch.sum(chord_x, 3, keepdim=True)   # 384,12,1
+        chord_x = x.view(-1, 8, 384, 12)
+        chord_x = torch.sum(chord_x, 1, keepdim=True)   # 384,12,1
 
         chord_outout = self.relu(self.chord_conv1(chord_x))
         chord_outout = self.relu(self.chord_conv2(chord_outout))
