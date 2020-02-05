@@ -9,7 +9,7 @@ class Loss(nn.Module):
 
     def forward(self, logits, labels, mean, var, gan_loss):
         loss1 = self.loss(logits, labels)
-        loss2 = self.loss(torch.gt(logits, 0.35).type('torch.FloatTensor'), labels)
+        loss2 = self.loss(torch.gt(logits, 0.35).type('torch.cuda.FloatTensor'), labels)
 
         # reconstruction error + KLD + gan_loss
         return 0.5 * (0.2 * loss1 + 0.8 * loss2) + \
