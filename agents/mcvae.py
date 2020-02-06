@@ -54,7 +54,7 @@ class MCVAE(object):
         self.current_iteration = 0
         self.best_error = 9999999999.
 
-        self.fixed_noise = Variable(torch.randn(1, 1, 384, 96))
+        self.fixed_noise = Variable(torch.randn(1, 510))
         self.zero_note = Variable(torch.zeros(1, 1, 384, 96))
 
         # set cuda flag
@@ -213,7 +213,7 @@ class MCVAE(object):
             self.summary_writer.add_scalar("epoch/Generator_loss", epoch_loss.val, self.current_iteration)
             self.summary_writer.add_scalar("epoch/Discriminator_loss", epoch_lossD.val, self.current_iteration)
 
-        out_img, _, _ = self.model(self.zero_note, self.zero_note, torch.tensor([300], dtype=torch.long).cuda())
+        out_img = self.model(self.fixed_noise, self.zero_note, torch.tensor([330], dtype=torch.long).cuda(), False)
         self.summary_writer.add_image('train/generated_image',
                                       torch.gt(out_img, 0.35).type('torch.FloatTensor').view(1, 384, 96) * 255,
                                       self.current_iteration)
