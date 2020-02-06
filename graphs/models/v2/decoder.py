@@ -68,7 +68,7 @@ class Decoder(nn.Module):
 
         out = self.sigmoid(self.fit3(out))
 
-        out = self.sigmoid(self.lstm(out.view(-1, 384, 96)))
+        out = self.sigmoid(self.lstm(out.view(-1, 384, 96))[0])
 
         logits = out.view(-1, 1, 384, 96)
 
