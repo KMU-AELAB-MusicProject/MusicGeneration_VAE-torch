@@ -40,7 +40,7 @@ class Decoder(nn.Module):
 
         self.fit3 = nn.Conv2d(in_channels=16, out_channels=1, kernel_size=1, stride=1, bias=False)
 
-        self.lstm = nn.LSTM(input_size=96, hidden_size=96, num_layers=2)
+        self.lstm = nn.LSTM(input_size=96, hidden_size=96, num_layers=2, batch_first=True)
 
         self.apply(weights_init)
 
@@ -68,8 +68,8 @@ class Decoder(nn.Module):
 
         out = self.sigmoid(self.fit3(out))
 
-        out = self.sigmoid(self.lstm(out.view(-1, 384, 96).transpose(0, 1)))
+        out = self.sigmoid(self.lstm(out.view(-1, 384, 96)))
 
-        logits = out.transpose(0, 1).view(-1, 1, 384, 96)
+        logits = out.view(-1, 1, 384, 96)
 
         return logits
