@@ -213,7 +213,7 @@ class MCWAE(object):
             r_logits = self.discriminator(self.model(note)[1])
             f_logits = self.discriminator(z_fake)
 
-            loss_D = (torch.log(1.001 - r_logits).mean()) - torch.log(f_logits).mean()
+            loss_D = -((torch.log(1.001 - r_logits).mean()) + torch.log(f_logits).mean())
             loss_D.backward(retain_graph=True)
             self.optimD.step()
 
