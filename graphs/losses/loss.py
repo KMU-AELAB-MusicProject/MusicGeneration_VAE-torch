@@ -24,3 +24,14 @@ class DLoss(nn.Module):
 
     def forward(self, logits, target):
         return self.loss(logits, target)
+
+class WAELoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.loss = nn.MSELoss()
+
+    def forward(self, gen_note, note, f_logits):
+        loss1 = self.loss(gen_note, note)
+        loss2 = torch.log(f_logits).mean()
+
+        return loss1 - loss2
