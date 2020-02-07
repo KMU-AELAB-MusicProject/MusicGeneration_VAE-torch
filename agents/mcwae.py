@@ -238,8 +238,8 @@ class MCWAE(object):
             z_fake = torch.randn(note.size()[0], 510)
             z_fake = z_fake.cuda()
 
-            r_logits = self.discriminator(self.model(note, pre_note, position)[1])
-            f_logits = self.discriminator(z_fake)
+            r_logits = self.discriminator_z(self.model(note, pre_note, position)[1])
+            f_logits = self.discriminator_z(z_fake)
 
             loss_DZ = -((torch.log(1.001 - r_logits).mean()) + torch.log(f_logits).mean())
             loss_DZ.backward(retain_graph=True)
