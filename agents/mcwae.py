@@ -175,6 +175,7 @@ class MCWAE(object):
             self.save_checkpoint(self.config.checkpoint_file, is_best)
             torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimWAE, mode='min', factor=0.8, cooldown=4)
             torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimD, mode='min', factor=0.8, cooldown=4)
+            torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimDZ, mode='min', factor=0.8, cooldown=4)
 
     def train_one_epoch(self):
         tqdm_batch = tqdm(self.dataloader, total=self.dataset.num_iterations,
