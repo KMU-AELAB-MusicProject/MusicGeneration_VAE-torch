@@ -13,6 +13,7 @@ from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from graphs.models.wae_v1.model import Model
 from graphs.models.discriminator import Discriminator
+from graphs.models.discriminator_z import DiscriminatorZ
 from graphs.losses.loss import WAELoss, DLoss
 from datasets.noteDataset import NoteDataset
 
@@ -33,6 +34,7 @@ class MCWAE(object):
         # define models ( generator and discriminator)
         self.model = Model()
         self.discriminator = Discriminator()
+        self.discriminator_z = DiscriminatorZ()
 
         # define dataloader
         self.dataset = NoteDataset(self.config.root_path, self.config)
@@ -46,8 +48,10 @@ class MCWAE(object):
         # define optimizers for both generator and discriminator
         self.lr = self.config.learning_rate
         self.lrD = self.config.learning_rate
+        self.lrDZ = self.config.learning_rate
         self.optimWAE = torch.optim.Adam(self.model.parameters(), lr=self.lr)
         self.optimD = torch.optim.Adam(self.discriminator.parameters(), lr=self.lrD)
+        self.optimDZ = torch.optim.Adam(self.discriminator_z.parameters(), lr=self.lrDZ)
 
         # initialize counter
         self.current_epoch = 0
@@ -83,12 +87,14 @@ class MCWAE(object):
 
         self.model = self.model.to(self.device)
         self.discriminator = self.discriminator.to(self.device)
+        self.discriminator_z = self.discriminator_z.to(self.device)
         self.loss = self.loss.to(self.device)
         self.lossD = self.lossD.to(self.device)
 
         if len(self.config.gpu_device) > 1:
             self.model = nn.DataParallel(self.model, device_ids=self.config.gpu_device)
             self.discriminator = nn.DataParallel(self.discriminator, device_ids=self.config.gpu_device)
+            self.discriminator_z = nn.DataParallel(self.discriminator_z, device_ids=self.config.gpu_device)
 
         # Model Loading from the latest checkpoint if not found start from scratch.
         self.load_checkpoint(self.config.checkpoint_file)
@@ -124,6 +130,8 @@ class MCWAE(object):
             self.optimWAE.load_state_dict(checkpoint['model_optimizer'])
             self.discriminator.load_state_dict(checkpoint['discriminator_state_dict'])
             self.optimD.load_state_dict(checkpoint['discriminator_optimizer'])
+            self.discriminator_z.load_state_dict(checkpoint['discriminatorZ_state_dict'])
+            self.optimDZ.load_state_dict(checkpoint['discriminatorZ_optimizer'])
             self.fixed_noise = checkpoint['fixed_noise']
             self.manual_seed = checkpoint['manual_seed']
 
@@ -141,6 +149,8 @@ class MCWAE(object):
             'model_optimizer': self.optimWAE.state_dict(),
             'discriminator_state_dict': self.discriminator.state_dict(),
             'discriminator_optimizer': self.optimD.state_dict(),
+            'discriminatorZ_state_dict': self.discriminator_z.state_dict(),
+            'discriminatorZ_optimizer': self.optimDZ.state_dict(),
             'fixed_noise': self.fixed_noise,
             'manual_seed': self.manual_seed
         }
@@ -172,9 +182,11 @@ class MCWAE(object):
 
         self.model.train()
         self.discriminator.train()
+        self.discriminator_z.train()
 
         epoch_loss = AverageMeter()
         epoch_lossD = AverageMeter()
+        epoch_lossDZ = AverageMeter()
 
         for curr_it, (note, pre_note, position) in enumerate(tqdm_batch):
             if self.cuda:
@@ -189,22 +201,38 @@ class MCWAE(object):
 
             self.model.zero_grad()
             self.discriminator.zero_grad()
+            self.discriminator_z.zero_grad()
             zeros = torch.randn(note.size(0), ).fill_(0.).cuda()
             ones = torch.randn(note.size(0), ).fill_(1.).cuda()
 
             #################### Generator ####################
             self.free(self.model)
             self.frozen(self.discriminator)
+            self.frozen(self.discriminator_z)
 
-            gen_note = self.model(note, pre_note, position)
+            gen_note, z = self.model(note, pre_note, position)
             f_logits = self.discriminator(gen_note)
+            fz_logits = self.discriminator_z(z)
 
-            loss_model = self.loss(gen_note, note, f_logits)
+            loss_model = self.loss(gen_note, note, f_logits, fz_logits)
             loss_model.backward(retain_graph=True)
             self.optimWAE.step()
 
             #################### Discriminator ####################
             self.free(self.discriminator)
+            self.frozen(self.discriminator_z)
+            self.frozen(self.model)
+
+            r_logits = self.discriminator(note)
+            f_logits = self.discriminator(self.model(note, pre_note, position)[0])
+
+            loss_D = -((torch.log(1.001 - r_logits).mean()) + torch.log(f_logits).mean())
+            loss_D.backward(retain_graph=True)
+            self.optimD.step()
+
+            #################### DiscriminatorZ ####################
+            self.free(self.discriminator_z)
+            self.frozen(self.discriminator)
             self.frozen(self.model)
 
             z_fake = torch.randn(note.size()[0], 510)
@@ -213,18 +241,20 @@ class MCWAE(object):
             r_logits = self.discriminator(self.model(note)[1])
             f_logits = self.discriminator(z_fake)
 
-            loss_D = -((torch.log(1.001 - r_logits).mean()) + torch.log(f_logits).mean())
-            loss_D.backward(retain_graph=True)
-            self.optimD.step()
+            loss_DZ = -((torch.log(1.001 - r_logits).mean()) + torch.log(f_logits).mean())
+            loss_DZ.backward(retain_graph=True)
+            self.optimDZ.step()
 
             ####################
             epoch_lossD.update(loss_D.item())
+            epoch_lossDZ.update(loss_DZ.item())
             epoch_loss.update(loss_model.item())
 
             self.current_iteration += 1
 
             self.summary_writer.add_scalar("epoch/Generator_loss", epoch_loss.val, self.current_iteration)
             self.summary_writer.add_scalar("epoch/Discriminator_loss", epoch_lossD.val, self.current_iteration)
+            self.summary_writer.add_scalar("epoch/DiscriminatorZ_loss", epoch_lossDZ.val, self.current_iteration)
 
         out_img = self.model(self.fixed_noise, self.zero_note, torch.tensor([330], dtype=torch.long).cuda(), False)
         self.summary_writer.add_image('train/generated_image',

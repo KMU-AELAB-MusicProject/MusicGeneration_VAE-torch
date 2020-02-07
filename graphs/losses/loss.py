@@ -30,8 +30,9 @@ class WAELoss(nn.Module):
         super().__init__()
         self.loss = nn.MSELoss()
 
-    def forward(self, gen_note, note, f_logits):
+    def forward(self, gen_note, note, f_logits, fz_logits):
         loss1 = self.loss(gen_note, note)
         loss2 = torch.log(f_logits).mean()
+        loss3 = torch.log(fz_logits).mean()
 
-        return loss1 - loss2
+        return loss1 - (loss2 * 10.) - (loss3 * 8.)
