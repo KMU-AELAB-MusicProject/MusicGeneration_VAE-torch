@@ -19,11 +19,11 @@ class Model(nn.Module):
 
     def forward(self, note, pre_note, position, is_train=True):
         if is_train:
-            z, mean, var = self.encoder(note)
+            z = self.encoder(note)
             pre_z, pre_mean, pre_var = self.encoder(pre_note)
 
             return self.decoder(z + pre_z + self.position_embedding(position)), z
         else:
-            pre_z, pre_mean, pre_var = self.encoder(pre_note)
+            pre_z = self.encoder(pre_note)
 
             return self.decoder(note + pre_z + self.position_embedding(position))
