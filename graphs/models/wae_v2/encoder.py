@@ -52,7 +52,7 @@ class Encoder(nn.Module):
 
         self.avg = nn.AvgPool2d(kernel_size=(12, 3))
 
-        self.linear = nn.Linear(512, 510, bias=True)
+        self.linear = nn.Linear(512, 510)
 
         self.apply(weights_init)
 
