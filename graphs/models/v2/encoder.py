@@ -97,8 +97,7 @@ class Encoder(nn.Module):
 
         out = self.relu(self.reduce4(out + out3))
         out = self.relu(self.fit4(out))
-        out = self.batch_norm4(out)
-        out4 = self.avg(self.relu(out))
+        out4 = self.avg(out)
 
         mean = self.mean(out4.view(-1, 512))
         var = self.var(out4.view(-1, 512))
