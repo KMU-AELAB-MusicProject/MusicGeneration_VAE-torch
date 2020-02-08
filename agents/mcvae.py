@@ -54,8 +54,8 @@ class MCVAE(object):
         self.current_iteration = 0
         self.best_error = 9999999999.
 
-        self.fixed_noise = Variable(torch.randn(1, 510))
-        self.zero_note = Variable(torch.zeros(1, 1, 384, 96))
+        self.fixed_noise = Variable(torch.randn(1, 510), dtype=torch.FloatType)
+        self.zero_note = Variable(torch.zeros(1, 1, 384, 96), dtype=torch.FloatType)
 
         # set cuda flag
         self.is_cuda = torch.cuda.is_available()
@@ -138,7 +138,6 @@ class MCVAE(object):
             'manual_seed': self.manual_seed
         }
 
-        # Save the state
         torch.save(state, self.config.checkpoint_dir + file_name)
         if is_best:
             shutil.copyfile(self.config.checkpoint_dir + file_name,

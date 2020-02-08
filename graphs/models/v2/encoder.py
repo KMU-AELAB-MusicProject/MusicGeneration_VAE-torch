@@ -72,29 +72,33 @@ class Encoder(nn.Module):
         out = torch.cat((pitch_out, time_out), dim=1)
 
         out = self.leaky(self.reduce1(out))
-        out = self.leaky(self.fit1(out))
-        out1 = self.batch_norm1(out)
+        out = self.fit1(out)
+        out = self.batch_norm1(out)
+        out1 = self.leaky(out)
 
         out = self.leaky(self.conv1(out1))
         out = self.leaky(self.conv2(out))
 
         out = self.leaky(self.reduce2(out + out1))
-        out = self.leaky(self.fit2(out))
-        out2 = self.batch_norm2(out)
+        out = self.fit2(out)
+        out = self.batch_norm2(out)
+        out2 = self.leaky(out)
 
         out = self.leaky(self.conv3(out2))
         out = self.leaky(self.conv4(out))
 
         out = self.leaky(self.reduce3(out + out2))
         out = self.leaky(self.fit3(out))
-        out3 = self.batch_norm3(out)
+        out = self.batch_norm3(out)
+        out3 = self.relu(out)
 
         out = self.relu(self.conv5(out3))
         out = self.relu(self.conv6(out))
 
         out = self.relu(self.reduce4(out + out3))
         out = self.relu(self.fit4(out))
-        out4 = self.avg(self.batch_norm4(out))
+        out = self.batch_norm4(out)
+        out4 = self.avg(self.relu(out))
 
         mean = self.mean(out4.view(-1, 512))
         var = self.var(out4.view(-1, 512))
