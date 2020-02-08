@@ -54,8 +54,8 @@ class MCVAE(object):
         self.current_iteration = 0
         self.best_error = 9999999999.
 
-        self.fixed_noise = Variable(torch.randn(1, 510, dtype=torch.FloatType))
-        self.zero_note = Variable(torch.zeros(1, 1, 384, 96, dtype=torch.FloatType))
+        self.fixed_noise = Variable(torch.randn(1, 510, dtype=torch.float32))
+        self.zero_note = Variable(torch.zeros(1, 1, 384, 96, dtype=torch.float32))
 
         # set cuda flag
         self.is_cuda = torch.cuda.is_available()
