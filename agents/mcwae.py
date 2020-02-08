@@ -79,6 +79,7 @@ class MCWAE(object):
             torch.cuda.manual_seed_all(self.manual_seed)
             torch.cuda.set_device(self.config.gpu_device[0])
             self.fixed_noise = self.fixed_noise.cuda(async=self.config.async_loading)
+            self.zero_note = self.zero_note.cuda(async=self.config.async_loading)
             self.device = torch.device("cuda")
 
         else:
