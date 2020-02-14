@@ -1,3 +1,4 @@
+import os
 import numpy as np
 
 from tqdm import tqdm
@@ -120,7 +121,7 @@ class MCWAE(object):
                       torch.tensor(position, dtype=torch.long)])
 
     def load_checkpoint(self, file_name):
-        filename = self.config.checkpoint_dir + file_name
+        filename = os.path.join(self.config.root_path, self.config.checkpoint_dir, file_name)
         try:
             self.logger.info("Loading checkpoint '{}'".format(filename))
             checkpoint = torch.load(filename)
@@ -143,24 +144,27 @@ class MCWAE(object):
             self.logger.info("**First time to train**")
 
     def save_checkpoint(self, file_name, is_best=False):
+        gpu_cnt = len(self.config.gpu_device)
+        file_name = os.path.join(self.config.root_path, self.config.checkpoint_dir, file_name)
+
         state = {
             'epoch': self.current_epoch,
             'iteration': self.current_iteration,
-            'model_state_dict': self.model.state_dict(),
+            'model_state_dict': self.model.module.state_dict() if gpu_cnt > 1 else self.model.state_dict(),
             'model_optimizer': self.optimWAE.state_dict(),
-            'discriminator_state_dict': self.discriminator.state_dict(),
+            'discriminator_state_dict': self.discriminator.module.state_dict() if gpu_cnt > 1 else self.discriminator.state_dict(),
             'discriminator_optimizer': self.optimD.state_dict(),
-            'discriminatorZ_state_dict': self.discriminator_z.state_dict(),
+            'discriminatorZ_state_dict': self.discriminator_z.module.state_dict() if gpu_cnt > 1 else self.discriminator_z.state_dict(),
             'discriminatorZ_optimizer': self.optimDZ.state_dict(),
             'fixed_noise': self.fixed_noise,
             'manual_seed': self.manual_seed
         }
 
         # Save the state
-        torch.save(state, self.config.checkpoint_dir + file_name)
+        torch.save(state, file_name)
         if is_best:
-            shutil.copyfile(self.config.checkpoint_dir + file_name,
-                            self.config.checkpoint_dir + 'model_best.pth.tar')
+            shutil.copyfile(file_name,
+                            os.path.join(self.config.root_path, self.config.checkpoint_dir, 'model_best.pth.tar'))
 
     def run(self):
         try:
