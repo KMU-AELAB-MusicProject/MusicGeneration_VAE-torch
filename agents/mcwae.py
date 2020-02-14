@@ -102,7 +102,8 @@ class MCWAE(object):
         self.load_checkpoint(self.config.checkpoint_file)
 
         # Summary Writer
-        self.summary_writer = SummaryWriter(log_dir=self.config.summary_dir, comment='MC_WAE')
+        self.summary_writer = SummaryWriter(log_dir=os.path.join(self.config.root_path, self.config.summary_dir),
+                                            comment='MC_WAE')
 
     def free(self, module: nn.Module):
         for p in module.parameters():
@@ -281,6 +282,8 @@ class MCWAE(object):
     def finalize(self):
         self.logger.info("Please wait while finalizing the operation.. Thank you")
         self.save_checkpoint(self.config.checkpoint_file)
-        self.summary_writer.export_scalars_to_json("{}all_scalars.json".format(self.config.summary_dir))
+        self.summary_writer.export_scalars_to_json(os.path.join(self.config.root_path, self.config.summary_dir,
+                                                                'all_scalars.json'))
         self.summary_writer.close()
+
 

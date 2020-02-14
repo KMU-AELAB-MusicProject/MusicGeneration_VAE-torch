@@ -96,7 +96,8 @@ class MCVAE(object):
         self.load_checkpoint(self.config.checkpoint_file)
 
         # Summary Writer
-        self.summary_writer = SummaryWriter(log_dir=self.config.summary_dir, comment='MC_VAE')
+        self.summary_writer = SummaryWriter(log_dir=os.path.join(self.config.root_path, self.config.summary_dir),
+                                            comment='MC_VAE')
 
     def make_batch(self, samples):
         note = np.concatenate([sample['note'] for sample in samples], axis=0)
@@ -236,6 +237,7 @@ class MCVAE(object):
     def finalize(self):
         self.logger.info("Please wait while finalizing the operation.. Thank you")
         self.save_checkpoint(self.config.checkpoint_file)
-        self.summary_writer.export_scalars_to_json("{}all_scalars.json".format(self.config.summary_dir))
+        self.summary_writer.export_scalars_to_json(os.path.join(self.config.root_path, self.config.summary_dir,
+                                                                'all_scalars.json'))
         self.summary_writer.close()
 
