@@ -43,7 +43,7 @@ class Decoder(nn.Module):
         self.apply(weights_init)
 
     def forward(self, x):
-        x = x.view(-1, 510, 1, 1)
+        x = x.view(-1, 1152, 1, 1)
         pitch_out = self.leaky(self.pitch1(x))
         pitch_out = self.leaky(self.pitch2(pitch_out))
 

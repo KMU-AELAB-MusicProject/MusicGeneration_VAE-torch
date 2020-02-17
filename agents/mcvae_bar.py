@@ -16,7 +16,7 @@ from graphs.models.bar_v1.model import Model
 from graphs.models.bar_v1.phrase_model import PhraseModel
 from graphs.models.discriminator import Discriminator
 from graphs.losses.bar_loss import Loss, DLoss, PhraseLoss
-from datasets.noteDataset import NoteDataset
+from datasets.bar_dataset import NoteDataset
 
 from tensorboardX import SummaryWriter
 from utils.metrics import AverageMeter, AverageMeterList, evaluate
