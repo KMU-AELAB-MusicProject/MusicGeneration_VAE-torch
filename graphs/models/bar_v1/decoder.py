@@ -23,7 +23,7 @@ class Decoder(nn.Module):
                                         bias=False)
 
         self.fit1 = nn.Conv2d(in_channels=1024, out_channels=512, kernel_size=1, stride=1, bias=False)
-        self.batch_norm1 = nn.BatchNorm2d(256)
+        self.batch_norm1 = nn.BatchNorm2d(512)
 
         self.deconv1 = nn.ConvTranspose2d(in_channels=512, out_channels=256, kernel_size=3, stride=2,
                                           padding=1, output_padding=1, bias=True)
