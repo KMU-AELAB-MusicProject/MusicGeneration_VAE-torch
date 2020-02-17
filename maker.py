@@ -4,6 +4,7 @@ import pypianoroll
 import numpy as np
 
 from config import Config
+from torch.autograd import Variable
 from graphs.models.v1.model import Model
 
 
@@ -34,7 +35,8 @@ pre_phrase = np.zeros([1, 384, 96], dtype=np.float64)
 phrase_idx = [330] + [i for i in range(args.music_length - 2, -1, -1)]
 
 for idx in range(args.seq_size):
-    pre_phrase = checkpoint.model.test(pre_phrase, np.array([phrase_idx[idx]], dtype=np.float64))
+    pre_phrase = model(Variable(torch.randn(1, 510, dtype=torch.float32)), pre_phrase,
+                       torch.tensor([phrase_idx[idx]], dtype=torch.long), False)
     outputs.append(np.reshape(np.array(pre_phrase), [96 * 4, 96, 1]))
 
 ##### set note size #####
