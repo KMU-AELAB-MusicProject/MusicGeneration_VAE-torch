@@ -24,7 +24,7 @@ class BarDiscriminator(nn.Module):
         self.chord_fit = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=1, stride=1, bias=False)
         self.chord_conv5 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=2, padding=1, bias=False)
 
-        self.avg = nn.AvgPool2d(kernel_size=(13, 3))
+        self.avg = nn.AvgPool2d(kernel_size=(3, 3))
 
         ###########################
         self.onoff_conv1 = nn.Conv2d(in_channels=1, out_channels=8, kernel_size=3, stride=(2, 1), padding=1,
@@ -71,10 +71,10 @@ class BarDiscriminator(nn.Module):
         self.apply(weights_init)
 
     def forward(self, x):
-        x = x.view(-1, 1, 384, 96)
+        x = x.view(-1, 1, 96, 96)
 
         # chord feature extraction
-        chord_x = x.view(-1, 8, 384, 12)
+        chord_x = x.view(-1, 8, 96, 12)
         chord_x = torch.sum(chord_x, 1, keepdim=True)   # 384,12,1
 
         chord_output = self.relu(self.chord_conv1(chord_x))
