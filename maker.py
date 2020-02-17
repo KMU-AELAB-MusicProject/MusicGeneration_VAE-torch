@@ -4,7 +4,6 @@ import pypianoroll
 import numpy as np
 
 from config import Config
-from torch.autograd import Variable
 from graphs.models.v1.model import Model
 
 
@@ -31,13 +30,13 @@ model.to(device)
 
 ##### make music #####
 outputs = []
-pre_phrase = np.zeros([1, 384, 96], dtype=np.float64)
+pre_phrase = torch.zeros(1, 1, 384, 96, dtype=torch.float32)
 phrase_idx = [330] + [i for i in range(args.music_length - 2, -1, -1)]
 
-for idx in range(args.music_length  ):
-    pre_phrase = model(Variable(torch.randn(1, 510, dtype=torch.float32)), pre_phrase,
-                       torch.tensor([phrase_idx[idx]], dtype=torch.long), False)
-    outputs.append(np.reshape(np.array(pre_phrase), [96 * 4, 96, 1]))
+for idx in range(args.music_length):
+    pre_phrase = model(torch.randn(1, 510, dtype=torch.float32).cuda(), pre_phrase.cuda(),
+                       torch.tensor([phrase_idx[idx]], dtype=torch.long).cuda(), False)
+    outputs.append(np.reshape(pre_phrase.cpu().detach().numpy(), [96 * 4, 96, 1]))
 
 ##### set note size #####
 note = np.array(outputs)
