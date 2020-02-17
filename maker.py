@@ -40,7 +40,7 @@ for idx in range(args.music_length):
 
 ##### set note size #####
 note = np.array(outputs)
-note = note.reshape(96 * 4 * args.seq_size, 96) * 127
+note = note.reshape(96 * 4 * args.music_length, 96) * 127
 note = np.pad(note, [[0, 0], [25, 7]], mode='constant', constant_values=0.)
 
 ##### save to midi #####
