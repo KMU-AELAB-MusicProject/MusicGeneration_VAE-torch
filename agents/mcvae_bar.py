@@ -14,7 +14,7 @@ from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from graphs.models.bar_v1.model import Model
 from graphs.models.bar_v1.phrase_model import PhraseModel
-from graphs.models.discriminator import Discriminator
+from graphs.models.bar_discriminator import BarDiscriminator
 from graphs.losses.bar_loss import Loss, DLoss, PhraseLoss
 from datasets.bar_dataset import NoteDataset
 
@@ -35,7 +35,7 @@ class MCVAE(object):
         # define models ( generator and discriminator)
         self.model = Model()
         self.phrase_model = PhraseModel()
-        self.discriminator = Discriminator()
+        self.discriminator = BarDiscriminator()
 
         # define dataloader
         self.dataset = NoteDataset(self.config.root_path, self.config)
