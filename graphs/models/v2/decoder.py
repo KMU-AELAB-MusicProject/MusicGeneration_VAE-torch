@@ -68,8 +68,7 @@ class Decoder(nn.Module):
 
         out = self.leaky(self.fit3(out))
 
-        out = self.lstm(out.view(-1, 384, 96))[0]
-        out = (out + 1) / 2
+        out = self.sigmoid(self.lstm(out.view(-1, 384, 96))[0])
 
         logits = out.view(-1, 1, 384, 96)
 
