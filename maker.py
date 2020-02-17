@@ -34,7 +34,7 @@ outputs = []
 pre_phrase = np.zeros([1, 384, 96], dtype=np.float64)
 phrase_idx = [330] + [i for i in range(args.music_length - 2, -1, -1)]
 
-for idx in range(args.seq_size):
+for idx in range(args.music_length  ):
     pre_phrase = model(Variable(torch.randn(1, 510, dtype=torch.float32)), pre_phrase,
                        torch.tensor([phrase_idx[idx]], dtype=torch.long), False)
     outputs.append(np.reshape(np.array(pre_phrase), [96 * 4, 96, 1]))
