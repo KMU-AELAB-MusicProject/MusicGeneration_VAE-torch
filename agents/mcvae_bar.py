@@ -93,6 +93,7 @@ class MCVAE(object):
 
         if len(self.config.gpu_device) > 1:
             self.model = nn.DataParallel(self.model, device_ids=self.config.gpu_device)
+            self.phrase_model = nn.DataParallel(self.phrase_model, device_ids=self.config.gpu_device)
             self.discriminator = nn.DataParallel(self.discriminator, device_ids=self.config.gpu_device)
 
         # Model Loading from the latest checkpoint if not found start from scratch.
@@ -181,6 +182,7 @@ class MCVAE(object):
                           desc="epoch-{}-".format(self.current_epoch))
 
         self.model.train()
+        self.phrase_model.train()
         self.discriminator.train()
 
         epoch_loss = AverageMeter()
