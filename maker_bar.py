@@ -40,7 +40,7 @@ phrase_idx = [330] + [i for i in range(args.music_length - 2, -1, -1)]
 for idx in range(args.music_length):
     bar_set = []
     for _ in range(4):
-        phrase_feature = phrase_model(pre_phrase.cuda(), torch.tensor([phrase_idx[idx]], dtype=torch.long).cuda())
+        phrase_feature, _, _ = phrase_model(pre_phrase.cuda(), torch.tensor([phrase_idx[idx]], dtype=torch.long).cuda())
         pre_bar = model(torch.randn(1, 1152, dtype=torch.float32).cuda(), pre_bar.cuda(), phrase_feature, False)
 
         pre_bar = torch.gt(pre_bar, 0.35).type('torch.FloatTensor') # 1, 1, 96, 96
