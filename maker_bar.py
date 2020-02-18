@@ -44,7 +44,7 @@ for idx in range(args.music_length):
         pre_bar = model(torch.randn(1, 1152, dtype=torch.float32).cuda(), pre_bar.cuda(), phrase_feature, False)
 
         pre_bar = torch.gt(pre_bar, 0.35).type('torch.FloatTensor') # 1, 1, 96, 96
-        bar_set.append(np.reshape(pre_bar.numpy(), [96, 96, 1]))
+        bar_set.append(np.reshape(pre_bar.numpy(), [96, 96]))
 
     pre_phrase = np.concatenate(bar_set, axis=0)
     outputs.append(pre_phrase)
