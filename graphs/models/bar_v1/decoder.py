@@ -45,24 +45,24 @@ class Decoder(nn.Module):
     def forward(self, x):
         x = x.view(-1, 2304, 1, 1)
         pitch_out = self.leaky(self.pitch1(x))
-        pitch_out = self.leaky(self.pitch2(pitch_out))
+        pitch_out = self.relu(self.pitch2(pitch_out))
 
         time_out = self.leaky(self.time1(x))
-        time_out = self.leaky(self.time2(time_out))
+        time_out = self.relu(self.time2(time_out))
 
         out = torch.cat((pitch_out, time_out), dim=1)
 
-        out = self.leaky(self.fit1(out))
+        out = self.relu(self.fit1(out))
         out = self.batch_norm1(out)
 
-        out = self.leaky(self.deconv1(out))
-        out = self.leaky(self.deconv2(out))
+        out = self.relu(self.deconv1(out))
+        out = self.relu(self.deconv2(out))
 
-        out = self.leaky(self.fit2(out))
+        out = self.relu(self.fit2(out))
         out = self.batch_norm2(out)
 
-        out = self.leaky(self.deconv3(out))
-        out = self.leaky(self.deconv4(out))
+        out = self.relu(self.deconv3(out))
+        out = self.relu(self.deconv4(out))
 
         logits = self.sigmoid(self.fit3(out))
 
