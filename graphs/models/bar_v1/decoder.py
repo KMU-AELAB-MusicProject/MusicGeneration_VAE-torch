@@ -26,17 +26,17 @@ class Decoder(nn.Module):
         self.batch_norm1 = nn.BatchNorm2d(1024)
 
         self.deconv1 = nn.ConvTranspose2d(in_channels=1024, out_channels=512, kernel_size=3, stride=2,
-                                          padding=1, output_padding=1, bias=True)
+                                          padding=1, output_padding=1, bias=False)
         self.deconv2 = nn.ConvTranspose2d(in_channels=512, out_channels=256, kernel_size=3, stride=2,
-                                          padding=1, output_padding=1, bias=True)
+                                          padding=1, output_padding=1, bias=False)
 
         self.fit2 = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=1, stride=1, bias=False)
         self.batch_norm2 = nn.BatchNorm2d(256)
 
         self.deconv3 = nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=3, stride=2,
-                                          padding=1, output_padding=1, bias=True)
+                                          padding=1, output_padding=1, bias=False)
         self.deconv4 = nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=3, stride=2,
-                                          padding=1, output_padding=1, bias=True)
+                                          padding=1, output_padding=1, bias=False)
 
         self.fit3 = nn.Conv2d(in_channels=64, out_channels=1, kernel_size=1, stride=1, bias=False)
 

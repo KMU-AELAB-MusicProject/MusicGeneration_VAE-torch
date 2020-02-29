@@ -52,8 +52,8 @@ class PhraseEncoder(nn.Module):
 
         self.avg = nn.AvgPool2d(kernel_size=(12, 3))
 
-        self.mean = nn.Linear(1024, 1152, bias=True)
-        self.var = nn.Linear(1024, 1152, bias=True)
+        self.mean = nn.Linear(1024, 1152, bias=False)
+        self.var = nn.Linear(1024, 1152, bias=False)
 
         self.apply(weights_init)
 

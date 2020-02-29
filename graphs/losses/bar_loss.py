@@ -7,12 +7,12 @@ class Loss(nn.Module):
         super().__init__()
         self.loss = nn.BCELoss()
 
-    def forward(self, logits, labels, gan_loss, mean, var, pre_mean, pre_var):
+    def forward(self, logits, labels, mean, var, pre_mean, pre_var):
         recon_loss = self.loss(logits, labels)
         elbo = (torch.sum(1 + var - mean.pow(2) - var.exp()) + torch.sum(1 + var - pre_mean.pow(2) - pre_var.exp())) / 2
 
         # reconstruction error + KLD + gan_loss
-        return recon_loss - (0.5 * elbo) - torch.log(gan_loss).mean()
+        return recon_loss - (0.5 * elbo)# - torch.log(gan_loss).mean()
 
 
 class PhraseLoss(nn.Module):
@@ -20,11 +20,11 @@ class PhraseLoss(nn.Module):
         super().__init__()
         self.loss = nn.BCELoss()
 
-    def forward(self, logits, labels, gan_loss, mean, var):
+    def forward(self, logits, labels, mean, var):
         recon_loss = self.loss(logits, labels)
 
         # reconstruction error + KLD + gan_loss
-        return recon_loss - (0.5 * torch.sum(1 + var - mean.pow(2) - var.exp())) - torch.log(gan_loss).mean()
+        return recon_loss - (0.5 * torch.sum(1 + var - mean.pow(2) - var.exp()))# - torch.log(gan_loss).mean()
 
 
 class DLoss(nn.Module):
