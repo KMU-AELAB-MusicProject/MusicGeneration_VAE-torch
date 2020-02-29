@@ -13,7 +13,7 @@ def weights_init(m):
 
     elif classname.find('Linear') != -1:
         m.weight.data.normal_(0.0, 0.02)
-        m.bias.data.fill_(0)
+        # m.bias.data.fill_(0)
 
 
 class Initializer:
