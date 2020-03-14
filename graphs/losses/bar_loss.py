@@ -12,7 +12,7 @@ class Loss(nn.Module):
         elbo = (torch.sum(1 + var - mean.pow(2) - var.exp()) + torch.sum(1 + var - pre_mean.pow(2) - pre_var.exp())) / 2
 
         out = torch.gt(logits, 0.35).type('torch.cuda.FloatTensor')
-        additional_loss = torch.gt(labels - out, 0.0001).type('torch.cuda.FloatTensor')
+        additional_loss = (torch.gt(labels - out, 0.0001).type('torch.cuda.FloatTensor')).mean()
 
         # reconstruction error + KLD + gan_loss
         return (recon_loss + additional_loss * 0.8) - (0.5 * elbo) # - torch.log(gan_loss).mean()
@@ -27,7 +27,7 @@ class PhraseLoss(nn.Module):
         recon_loss = self.loss(logits, labels)
 
         out = torch.gt(logits, 0.35).type('torch.cuda.FloatTensor')
-        additional_loss = torch.gt(labels - out, 0.0001).type('torch.cuda.FloatTensor')
+        additional_loss = (torch.gt(labels - out, 0.0001).type('torch.cuda.FloatTensor')).mean()
 
         # reconstruction error + KLD + gan_loss
         return (recon_loss + additional_loss * 0.8) - (0.5 * torch.sum(1 + var - mean.pow(2) - var.exp()))# - torch.log(gan_loss).mean()
