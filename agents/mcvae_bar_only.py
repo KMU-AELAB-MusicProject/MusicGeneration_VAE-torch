@@ -164,8 +164,13 @@ class MCVAE(object):
     def train(self):
         for epoch in range(self.current_epoch, self.config.epoch):
             self.current_epoch = epoch
-            is_best = self.train_one_epoch()
+            is_best, loss = self.train_one_epoch()
             self.save_checkpoint(self.config.checkpoint_file, is_best)
+
+            for param_group in self.optimVAE.param_groups:
+                lr = param_group['lr']
+
+            print('{}epoch loss: {}, lr: {}'.format(loss, lr))
 
     def train_one_epoch(self):
         tqdm_batch = tqdm(self.dataloader, total=self.dataset.num_iterations,
@@ -233,9 +238,9 @@ class MCVAE(object):
 
         if epoch_loss.val < self.best_error:
             self.best_error = epoch_loss.val
-            return True
+            return True, epoch_loss.val
         else:
-            return False
+            return False, epoch_loss.val
 
     def finalize(self):
         self.logger.info("Please wait while finalizing the operation.. Thank you")
