@@ -136,6 +136,7 @@ class MCVAE(object):
 
     def save_checkpoint(self, file_name, is_best=False):
         gpu_cnt = len(self.config.gpu_device)
+        tmp_name = os.path.join(self.config.root_path, self.config.checkpoint_dir, 'tmp.pth.tar')
         file_name = os.path.join(self.config.root_path, self.config.checkpoint_dir, file_name)
 
         state = {
@@ -147,9 +148,10 @@ class MCVAE(object):
             'phrase_model_optimizer': self.optim_phrase.state_dict(),
         }
 
-        torch.save(state, file_name)
+        torch.save(state, tmp_name)
+        shutil.copyfile(tmp_name, file_name)
         if is_best:
-            shutil.copyfile(file_name,
+            shutil.copyfile(tmp_name,
                             os.path.join(self.config.root_path, self.config.checkpoint_dir, 'model_best.pth.tar'))
 
     def run(self):
