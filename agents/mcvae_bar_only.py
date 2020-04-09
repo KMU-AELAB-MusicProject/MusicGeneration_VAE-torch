@@ -50,6 +50,9 @@ class MCVAE(object):
         self.optimVAE = torch.optim.Adam(self.model.parameters(), lr=self.lr)
         self.optim_phrase = torch.optim.Adam(self.phrase_model.parameters(), lr=self.lr_phrase)
 
+        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimVAE, mode='min', factor=0.8, cooldown=4)
+        self.scheduler_phrase = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optim_phrase, mode='min', factor=0.8, cooldown=4)
+
         # initialize counter
         self.current_epoch = 0
         self.current_iteration = 0
@@ -161,8 +164,6 @@ class MCVAE(object):
             self.current_epoch = epoch
             is_best = self.train_one_epoch()
             self.save_checkpoint(self.config.checkpoint_file, is_best)
-            torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimVAE, mode='min', factor=0.8, cooldown=4)
-            torch.optim.lr_scheduler.ReduceLROnPlateau(self.optim_phrase, mode='min', factor=0.8, cooldown=4)
 
     def train_one_epoch(self):
         tqdm_batch = tqdm(self.dataloader, total=self.dataset.num_iterations,
@@ -222,6 +223,8 @@ class MCVAE(object):
             self.summary_writer.add_scalar("epoch/PhrasseEncoder_loss", epoch_phrase_loss.val, self.current_iteration)
 
         tqdm_batch.close()
+        self.scheduler.step(epoch_loss.val)
+        self.scheduler_phrase.step(epoch_phrase_loss.val)
 
         self.logger.info("Training at epoch-" + str(self.current_epoch) + " | " + "Discriminator loss: "
                          + " - Generator Loss-: " + str(epoch_loss.val))
