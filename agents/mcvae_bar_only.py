@@ -50,8 +50,8 @@ class MCVAE(object):
         self.optimVAE = torch.optim.Adam(self.model.parameters(), lr=self.lr)
         self.optim_phrase = torch.optim.Adam(self.phrase_model.parameters(), lr=self.lr_phrase)
 
-        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimVAE, mode='min', factor=0.8, cooldown=4)
-        self.scheduler_phrase = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optim_phrase, mode='min', factor=0.8, cooldown=4)
+        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimVAE, mode='min', factor=0.8, cooldown=5)
+        self.scheduler_phrase = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optim_phrase, mode='min', factor=0.8, cooldown=5)
 
         # initialize counter
         self.current_epoch = 0
