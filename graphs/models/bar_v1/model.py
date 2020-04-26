@@ -24,7 +24,11 @@ class Model(nn.Module):
             bar_feature = z + pre_z
             feature = torch.cat((bar_feature, phrase_feature), dim=1)
 
-            return self.decoder(feature), mean, var, pre_mean, pre_var
+            gen_note = self.decoder(feature)
+
+            z_gen, _, _ = self.encoder(gen_note)
+
+            return gen_note, mean, var, pre_mean, pre_var, z, z_gen
         else:
             pre_z, pre_mean, pre_var = self.encoder(pre_note)
 

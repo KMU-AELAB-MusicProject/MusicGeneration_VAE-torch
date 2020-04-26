@@ -14,7 +14,7 @@ from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from graphs.models.bar_v1.model import Model
 from graphs.models.bar_v1.phrase_model import PhraseModel
-from graphs.losses.bar_loss import Loss, PhraseLoss
+from graphs.losses.bar_loss import LossDistance, PhraseLoss
 from datasets.bar_dataset import NoteDataset
 
 from tensorboardX import SummaryWriter
@@ -41,7 +41,7 @@ class MCVAE(object):
                                      pin_memory=self.config.pin_memory, collate_fn=self.make_batch)
 
         # define loss
-        self.loss = Loss()
+        self.loss = LossDistance()
         self.phrase_loss = PhraseLoss()
 
         # define optimizers for both generator and discriminator
@@ -203,9 +203,9 @@ class MCVAE(object):
             self.frozen(self.phrase_model)
 
             phrase_feature, _, _ = self.phrase_model(pre_phrase, position)
-            gen_note, mean, var, pre_mean, pre_var, _, _ = self.model(note, pre_note, phrase_feature)
+            gen_note, mean, var, pre_mean, pre_var, z, z_gen = self.model(note, pre_note, phrase_feature)
 
-            gen_loss = self.loss(gen_note, note, mean, var, pre_mean, pre_var)
+            gen_loss = self.loss(gen_note, note, mean, var, pre_mean, pre_var, z, z_gen)
             gen_loss.backward(retain_graph=True)
             self.optimVAE.step()
 
@@ -214,7 +214,7 @@ class MCVAE(object):
             self.frozen(self.model)
 
             phrase_feature, mean, var = self.phrase_model(pre_phrase, position)
-            gen_note, _, _, _, _, _, _ = self.model(note, pre_note, phrase_feature)
+            gen_note, _, _, _, _ = self.model(note, pre_note, phrase_feature)
 
             phrase_loss = self.phrase_loss(gen_note, note, mean, var)
             phrase_loss.backward(retain_graph=True)
