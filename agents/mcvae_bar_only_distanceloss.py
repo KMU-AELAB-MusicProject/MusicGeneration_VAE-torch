@@ -134,7 +134,7 @@ class MCVAE(object):
             self.logger.info("No checkpoint exists from '{}'. Skipping...".format(self.config.checkpoint_dir))
             self.logger.info("**First time to train**")
 
-    def save_checkpoint(self, file_name, is_best=False):
+    def save_checkpoint(self, file_name, epoch, is_best=False):
         gpu_cnt = len(self.config.gpu_device)
         tmp_name = os.path.join(self.config.root_path, self.config.checkpoint_dir, 'tmp.pth.tar')
         file_name = os.path.join(self.config.root_path, self.config.checkpoint_dir, file_name)
@@ -165,8 +165,10 @@ class MCVAE(object):
         for epoch in range(self.current_epoch, self.config.epoch):
             self.current_epoch = epoch
             is_best, loss = self.train_one_epoch()
-            self.save_checkpoint(self.config.checkpoint_file, is_best)
+            if epoch > 300:
+                self.save_checkpoint(self.config.checkpoint_file, epoch, is_best)
 
+            lr = 0.
             for param_group in self.optimVAE.param_groups:
                 lr = param_group['lr']
 

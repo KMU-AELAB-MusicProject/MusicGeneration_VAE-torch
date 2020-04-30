@@ -30,7 +30,7 @@ class LossDistance(nn.Module):
         additional_loss = (torch.gt(labels - out, 0.0001).type('torch.cuda.FloatTensor')).mean()
 
         # reconstruction error + KLD + gan_loss
-        return (recon_loss + additional_loss * 0.8) - (0.5 * elbo) + torch.cdist(z, z_gen, 2).mean()
+        return (recon_loss + additional_loss * 0.8) - (0.5 * elbo) + torch.cdist(z, z_gen, 2).mean()*0.001
 
 class PhraseLoss(nn.Module):
     def __init__(self):
