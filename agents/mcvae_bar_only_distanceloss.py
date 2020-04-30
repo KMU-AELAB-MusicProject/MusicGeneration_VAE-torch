@@ -136,7 +136,7 @@ class MCVAE(object):
 
     def save_checkpoint(self, file_name, epoch, is_best=False):
         gpu_cnt = len(self.config.gpu_device)
-        tmp_name = os.path.join(self.config.root_path, self.config.checkpoint_dir, 'checkpoint_{}.pth.tar'.epoch)
+        tmp_name = os.path.join(self.config.root_path, self.config.checkpoint_dir, 'checkpoint_{}.pth.tar'.format(epoch))
         # file_name = os.path.join(self.config.root_path, self.config.checkpoint_dir, file_name)
 
         state = {
