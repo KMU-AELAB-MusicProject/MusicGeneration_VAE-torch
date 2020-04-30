@@ -215,7 +215,7 @@ class MCVAE(object):
             self.frozen(self.model)
 
             phrase_feature, mean, var = self.phrase_model(pre_phrase, position)
-            gen_note, _, _, _, _ = self.model(note, pre_note, phrase_feature)
+            gen_note, _, _, _, _, _, _ = self.model(note, pre_note, phrase_feature)
 
             phrase_loss = self.phrase_loss(gen_note, note, mean, var)
             phrase_loss.backward(retain_graph=True)
