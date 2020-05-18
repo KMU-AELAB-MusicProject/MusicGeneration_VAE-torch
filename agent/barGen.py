@@ -19,8 +19,8 @@ from graph.bar_discriminator import BarDiscriminator
 from graph.loss.bar_loss import Loss, PhraseLoss, DLoss
 from data.bar_dataset import NoteDataset, TestDataset
 
+from metrics import AverageMeter
 from tensorboardX import SummaryWriter
-from utils.metrics import AverageMeter
 
 cudnn.benchmark = True
 
