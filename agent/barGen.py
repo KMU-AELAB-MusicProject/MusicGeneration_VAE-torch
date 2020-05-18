@@ -74,11 +74,11 @@ class BarGen(object):
         self.scheduler_phrase = torch.optim.lr_scheduler.ReduceLROnPlateau(self.opt_phrase, mode='min', factor=0.8,
                                                                            cooldown=5)
 
-        self.scheduler_GAN_gen = torch.optim.lr_scheduler.ReduceLROnPlateau(self.GAN_lr_gen, mode='min', factor=0.8,
+        self.scheduler_GAN_gen = torch.optim.lr_scheduler.ReduceLROnPlateau(self.GAN_opt_gen, mode='min', factor=0.8,
                                                                             cooldown=5)
-        self.scheduler_GAN_disc = torch.optim.lr_scheduler.ReduceLROnPlateau(self.GAN_lr_disc, mode='min', factor=0.8,
+        self.scheduler_GAN_disc = torch.optim.lr_scheduler.ReduceLROnPlateau(self.GAN_opt_disc, mode='min', factor=0.8,
                                                                              cooldown=5)
-        self.scheduler_GAN_phrase = torch.optim.lr_scheduler.ReduceLROnPlateau(self.GAN_lr_phrase, mode='min',
+        self.scheduler_GAN_phrase = torch.optim.lr_scheduler.ReduceLROnPlateau(self.GAN_opt_phrase, mode='min',
                                                                                factor=0.8, cooldown=5)
 
         # initialize counter
