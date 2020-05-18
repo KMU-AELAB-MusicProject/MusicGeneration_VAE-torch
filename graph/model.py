@@ -25,9 +25,7 @@ class Model(nn.Module):
 
             gen_note = self.decoder(feature)
 
-            z_gen, _, _ = self.encoder(torch.gt(gen_note, 0.35).type('torch.cuda.FloatTensor'))
-
-            return gen_note, mean, var, pre_mean, pre_var, z, z_gen
+            return gen_note, mean, var, pre_mean, pre_var, z
         else:
             pre_z, pre_mean, pre_var = self.encoder(pre_note)
 
