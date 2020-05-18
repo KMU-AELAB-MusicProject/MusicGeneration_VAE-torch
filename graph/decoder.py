@@ -16,8 +16,6 @@ class TimePitchModule(nn.Module):
         self.bn = nn.BatchNorm2d(32, eps=1e-5, momentum=0.01, affine=True)
         self.relu = nn.ReLU(inplace=True)
 
-        self.apply(weights_init)
-
     def forward(self, x):
         out = self.time(x)
         out = self.pitch(out)
@@ -39,8 +37,6 @@ class PitchTimeModule(nn.Module):
         self.bn = nn.BatchNorm2d(32, eps=1e-5, momentum=0.01, affine=True)
         self.relu = nn.ReLU(inplace=True)
 
-        self.apply(weights_init)
-
     def forward(self, x):
         out = self.pitch(x)
         out = self.time(out)
@@ -50,9 +46,9 @@ class PitchTimeModule(nn.Module):
         return out
 
 
-class RaiseModule(nn.Module):
+class DeConvModule(nn.Module):
     def __init__(self, in_channel, out_channel):
-        super(RaiseModule, self).__init__()
+        super(DeConvModule, self).__init__()
 
         self.deConv1 = nn.ConvTranspose2d(in_channels=in_channel, out_channels=out_channel, kernel_size=3, stride=2,
                                           padding=1, output_padding=1, bias=False)
@@ -60,15 +56,14 @@ class RaiseModule(nn.Module):
         self.deConv2 = nn.ConvTranspose2d(in_channels=in_channel, out_channels=out_channel, kernel_size=3, stride=2,
                                           padding=1, output_padding=1, bias=False)
 
-        self.conv = nn.Conv2d(in_channels=in_channel, out_channels=out_channel, kernel_size=1, stride=1, bias=False)
+        self.conv = nn.Conv2d(in_channels=in_channel, out_channels=out_channel, kernel_size=1, stride=1, padding=1,
+                              bias=False)
 
         self.bn1 = nn.BatchNorm2d(out_channel, eps=1e-5, momentum=0.01, affine=True)
         self.bn2 = nn.BatchNorm2d(out_channel, eps=1e-5, momentum=0.01, affine=True)
         self.bn3 = nn.BatchNorm2d(out_channel, eps=1e-5, momentum=0.01, affine=True)
 
         self.relu = nn.ReLU(inplace=True)
-
-        self.apply(weights_init)
 
     def forward(self, x):
         out1 = self.deConv1(x)
@@ -104,16 +99,15 @@ class Decoder(nn.Module):
         self.time = TimePitchModule()
         self.pitch = PitchTimeModule()
 
-        self.fit1 = nn.Conv2d(in_channels=2048, out_channels=1024, kernel_size=1, stride=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(32, eps=1e-5, momentum=0.01, affine=True)
 
-        self.fit2 = nn.Conv2d(in_channels=64, out_channels=1, kernel_size=1, stride=1, bias=False)
-        self.bn2 = nn.BatchNorm2d(32, eps=1e-5, momentum=0.01, affine=True)
+        self.fit = nn.Conv2d(in_channels=2048, out_channels=1024, kernel_size=1, stride=1, bias=False)
+        self.fit2 = nn.Conv2d(in_channels=2048, out_channels=1024, kernel_size=1, stride=1, bias=False)
+        self.bn = nn.BatchNorm2d(32, eps=1e-5, momentum=0.01, affine=True)
 
         self.layers = []
 
         for i in range(1, len(layers)):
-            self.layers.append(RaiseModule(layers[i - 1], layers[i]))
+            self.layers.append(DeConvModule(layers[i - 1], layers[i]))
 
         self.apply(weights_init)
 
@@ -124,15 +118,13 @@ class Decoder(nn.Module):
 
         out = torch.cat((pitch, time), dim=1)
 
-        out = self.fit1(out)
-        out = self.bn1(out)
+        out = self.fit(out)
+        out = self.bn(out)
         out = self.relu(out)
 
         for layer in self.layers:
             out = layer(out)
 
-        out = self.fit2(out)
-        out = self.bn2(out)
-        logits = self.sigmoid(out)
+        logits = self.sigmoid(self.fit3(out))
 
         return logits
