@@ -15,7 +15,7 @@ from torch.utils.data import DataLoader
 from graphs.models.v1.model import Model
 from graphs.models.discriminator import Discriminator
 from graphs.losses.loss import Loss, DLoss
-from datasets.noteDataset import NoteDataset
+from data.noteDataset import NoteDataset
 
 from tensorboardX import SummaryWriter
 from utils.metrics import AverageMeter, AverageMeterList, evaluate

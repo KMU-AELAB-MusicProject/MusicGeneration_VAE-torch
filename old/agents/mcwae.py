@@ -16,7 +16,7 @@ from graphs.models.wae_v1.model import Model
 from graphs.models.discriminator import Discriminator
 from graphs.models.discriminator_z import DiscriminatorZ
 from graphs.losses.loss import WAELoss, DLoss
-from datasets.noteDataset import NoteDataset
+from data.noteDataset import NoteDataset
 
 from tensorboardX import SummaryWriter
 from utils.metrics import AverageMeter, AverageMeterList, evaluate
