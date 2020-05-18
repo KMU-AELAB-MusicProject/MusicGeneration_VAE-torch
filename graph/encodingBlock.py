@@ -8,7 +8,7 @@ class TimePitchModule(nn.Module):
     def __init__(self):
         super(TimePitchModule, self).__init__()
 
-        self.time1 = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=(4, 1), stride=(2, 1), padding=[1, 0],
+        self.time = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=(4, 1), stride=(2, 1), padding=[1, 0],
                                bias=False)
         self.pitch = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=(1, 4), stride=(1, 2), padding=[0, 1],
                                bias=False)
