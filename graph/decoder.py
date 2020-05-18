@@ -50,9 +50,9 @@ class PitchTimeModule(nn.Module):
         return out
 
 
-class DeConvModule(nn.Module):
+class RaiseModule(nn.Module):
     def __init__(self, in_channel, out_channel):
-        super(DeConvModule, self).__init__()
+        super(RaiseModule, self).__init__()
 
         self.deConv1 = nn.ConvTranspose2d(in_channels=in_channel, out_channels=out_channel, kernel_size=3, stride=2,
                                           padding=1, output_padding=1, bias=False)
@@ -104,7 +104,6 @@ class Decoder(nn.Module):
         self.time = TimePitchModule()
         self.pitch = PitchTimeModule()
 
-
         self.fit1 = nn.Conv2d(in_channels=2048, out_channels=1024, kernel_size=1, stride=1, bias=False)
         self.bn1 = nn.BatchNorm2d(32, eps=1e-5, momentum=0.01, affine=True)
 
@@ -114,7 +113,7 @@ class Decoder(nn.Module):
         self.layers = []
 
         for i in range(1, len(layers)):
-            self.layers.append(DeConvModule(layers[i - 1], layers[i]))
+            self.layers.append(RaiseModule(layers[i - 1], layers[i]))
 
         self.apply(weights_init)
 
