@@ -241,9 +241,9 @@ class BarGen(object):
             self.frozen(self.phrase)
 
             phrase_feature, _, _ = self.phrase(pre_phrase, position)
-            gen_note, mean, var, pre_mean, pre_var, z, z_gen = self.generator(note, pre_note, phrase_feature)
+            gen_note, mean, var, pre_mean, pre_var, z = self.generator(note, pre_note, phrase_feature)
 
-            gen_loss = self.loss_gen(gen_note, note, mean, var, pre_mean, pre_var, z, z_gen)
+            gen_loss = self.loss_gen(gen_note, note, mean, var, pre_mean, pre_var, z)
             gen_loss.backward(retain_graph=True)
             self.opt_gen.step()
 
@@ -252,7 +252,7 @@ class BarGen(object):
             self.frozen(self.generator)
 
             phrase_feature, mean, var = self.phrase(pre_phrase, position)
-            gen_note, _, _, _, _, _, _ = self.generator(note, pre_note, phrase_feature)
+            gen_note, _, _, _, _, _ = self.generator(note, pre_note, phrase_feature)
 
             phrase_loss = self.loss_phrase(gen_note, note, mean, var)
             phrase_loss.backward(retain_graph=True)
@@ -310,9 +310,9 @@ class BarGen(object):
                 self.frozen(self.phrase)
 
                 phrase_feature, _, _ = self.phrase(pre_phrase, position)
-                gen_note, mean, var, pre_mean, pre_var, z, z_gen = self.generator(note, pre_note, phrase_feature)
+                gen_note, mean, var, pre_mean, pre_var, z = self.generator(note, pre_note, phrase_feature)
 
-                gen_loss = self.loss_gen(gen_note, note, mean, var, pre_mean, pre_var, z, z_gen)
+                gen_loss = self.loss_gen(gen_note, note, mean, var, pre_mean, pre_var, z)
                 gen_loss.backward(retain_graph=True)
                 self.GAN_opt_gen.step()
 
@@ -325,9 +325,9 @@ class BarGen(object):
                 self.frozen(self.phrase)
 
                 phrase_feature, _, _ = self.phrase(pre_phrase, position)
-                gen_note, mean, var, pre_mean, pre_var, z, z_gen = self.generator(note, pre_note, phrase_feature)
+                gen_note, mean, var, pre_mean, pre_var, z = self.generator(note, pre_note, phrase_feature)
 
-                disc_loss = self.loss_gen(gen_note, note, mean, var, pre_mean, pre_var, z, z_gen)
+                disc_loss = self.loss_gen(gen_note, note, mean, var, pre_mean, pre_var, z)
                 disc_loss.backward(retain_graph=True)
                 self.GAN_opt_disc.step()
 
