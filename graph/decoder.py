@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from graphs.weights_initializer import weights_init
+from graph.weights_initializer import weights_init
 
 
 class TimePitchModule(nn.Module):
@@ -15,6 +15,8 @@ class TimePitchModule(nn.Module):
 
         self.bn = nn.BatchNorm2d(32, eps=1e-5, momentum=0.01, affine=True)
         self.relu = nn.ReLU(inplace=True)
+
+        self.apply(weights_init)
 
     def forward(self, x):
         out = self.time(x)
@@ -36,6 +38,8 @@ class PitchTimeModule(nn.Module):
 
         self.bn = nn.BatchNorm2d(32, eps=1e-5, momentum=0.01, affine=True)
         self.relu = nn.ReLU(inplace=True)
+
+        self.apply(weights_init)
 
     def forward(self, x):
         out = self.pitch(x)
@@ -63,6 +67,8 @@ class DeConvModule(nn.Module):
         self.bn3 = nn.BatchNorm2d(out_channel, eps=1e-5, momentum=0.01, affine=True)
 
         self.relu = nn.ReLU(inplace=True)
+
+        self.apply(weights_init)
 
     def forward(self, x):
         out1 = self.deConv1(x)

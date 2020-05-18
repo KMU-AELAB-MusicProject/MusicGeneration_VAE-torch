@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from graphs.weights_initializer import weights_init
+from graph.weights_initializer import weights_init
 
 
 class ChordFeature(nn.Module):
@@ -23,6 +23,8 @@ class ChordFeature(nn.Module):
         self.batch_norm5 = nn.BatchNorm2d(64, eps=1e-5, momentum=0.01, affine=True)
 
         self.avg = nn.AvgPool2d(kernel_size=(12, 3))
+
+        self.apply(weights_init)
 
     def forward(self, x):
         chord_x = x.view(-1, 5, 96 * 2, 12)
@@ -73,6 +75,8 @@ class OnOffFeature(nn.Module):
 
         self.onoff_avg = nn.AvgPool2d(kernel_size=(6, 1))
 
+        self.apply(weights_init)
+
     def forward(self, x):
         onoff_x = torch.nn.functional.pad(x[:, :-1], (0, 0, 0, 0, 1, 0))
         onoff_x = torch.sum(x - onoff_x, 3, keepdim=True)  # 384,1,1
@@ -106,6 +110,8 @@ class ConvModule(nn.Module):
         self.isBasic = isBasic
 
         self.relu = nn.ReLU(inplace=True)
+
+        self.apply(weights_init)
 
     def forward(self, x):
         if not self.isBasic:
@@ -146,6 +152,8 @@ class BasicFeature(nn.Module):
 
         for i in range(1, len(layers)):
             self.layers.append(ConvModule(layers[i - 1], layers[i], False if i < 3 else True))
+
+        self.apply(weights_init)
 
     def forward(self, x):
         pitch = self.relu(self.pitch1(x))

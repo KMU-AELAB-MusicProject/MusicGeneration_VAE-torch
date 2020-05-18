@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 
+from graph.weights_initializer import weights_init
+
 
 class TimePitchModule(nn.Module):
     def __init__(self):
@@ -14,6 +16,8 @@ class TimePitchModule(nn.Module):
         self.bn = nn.BatchNorm2d(32, eps=1e-5, momentum=0.01, affine=True)
 
         self.leaky = nn.LeakyReLU(inplace=True)
+
+        self.apply(weights_init)
 
     def forward(self, x):
         out = self.time(x)
@@ -37,6 +41,8 @@ class PitchTimeModule(nn.Module):
 
         self.leaky = nn.LeakyReLU(inplace=True)
 
+        self.apply(weights_init)
+
     def forward(self, x):
         out = self.pitch(x)
         out = self.time(out)
@@ -59,6 +65,8 @@ class ResidualModule(nn.Module):
         self.bn2 = nn.BatchNorm2d(channel, eps=1e-5, momentum=0.01, affine=True)
 
         self.relu = nn.ReLU(inplace=True)
+
+        self.apply(weights_init)
 
     def forward(self, x):
         out = self.conv1(x)
@@ -85,6 +93,8 @@ class PoolingModule(nn.Module):
         self.bn = nn.BatchNorm2d(out_channel, eps=1e-5, momentum=0.01, affine=True)
 
         self.relu = nn.ReLU(inplace=True)
+
+        self.apply(weights_init)
 
     def forward(self, x):
         out = self.conv(x)
