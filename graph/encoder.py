@@ -15,8 +15,9 @@ class Encoder(nn.Module):
         for i in range(1, len(layers)):
             self.layers.append(ResidualModule(layers[i - 1]))
             self.layers.append(PoolingModule(layers[i - 1], layers[i]))
+        self.layers = nn.ModuleList(self.layers)
 
-        self.avg = nn.AvgPool2d(kernel_size=(3, 3))
+        self.avg = nn.AvgPool2d(kernel_size=(3, 2))
 
         self.mean = nn.Linear(1024, 1152, bias=False)
         self.var = nn.Linear(1024, 1152, bias=False)

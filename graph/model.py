@@ -24,8 +24,8 @@ class Model(nn.Module):
             feature = torch.cat((bar_feature, phrase_feature), dim=1)
 
             gen_note = self.decoder(feature)
-
-            return gen_note, mean, var, pre_mean, pre_var, z
+            
+            return gen_note, mean, var, pre_mean, pre_var
         else:
             pre_z, pre_mean, pre_var = self.encoder(pre_note)
 

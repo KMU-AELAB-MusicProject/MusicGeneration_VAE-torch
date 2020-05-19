@@ -16,8 +16,9 @@ class PhraseEncoder(nn.Module):
         for i in range(1, len(layers)):
             self.layers.append(ResidualModule(layers[i - 1]))
             self.layers.append(PoolingModule(layers[i - 1], layers[i]))
+        self.layers = nn.ModuleList(self.layers)
 
-        self.avg = nn.AvgPool2d(kernel_size=(12, 3))
+        self.avg = nn.AvgPool2d(kernel_size=(12, 2))
 
         self.mean = nn.Linear(1024, 1152, bias=False)
         self.var = nn.Linear(1024, 1152, bias=False)
@@ -34,7 +35,7 @@ class PhraseEncoder(nn.Module):
         time = self.time_pitch(x)
 
         out = torch.cat((pitch, time), dim=1)
-
+        
         for layer in self.layers:
             out = layer(out)
 
@@ -58,7 +59,7 @@ class PhraseModel(nn.Module):
 
         self.apply(weights_init)
 
-    def forward(self, phrase, position):
+    def forward(self, phrase, position):        
         z_phrase, mean_phrase, var_phrase = self.phrase_encoder(phrase)
         phrase_feature = z_phrase + self.position_embedding(position)
 

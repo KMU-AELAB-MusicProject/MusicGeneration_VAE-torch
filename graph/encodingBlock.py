@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+from graph.cbam import CBAM
 from graph.weights_initializer import weights_init
 
 
@@ -15,6 +16,8 @@ class TimePitchModule(nn.Module):
 
         self.bn = nn.BatchNorm2d(32, eps=1e-5, momentum=0.01, affine=True)
 
+        self.cbam = CBAM(32)
+
         self.leaky = nn.LeakyReLU(inplace=True)
 
         self.apply(weights_init)
@@ -23,6 +26,7 @@ class TimePitchModule(nn.Module):
         out = self.time(x)
         out = self.pitch(out)
         out = self.bn(out)
+        out = self.cbam(out)
         out = self.leaky(out)
 
         return out
@@ -39,6 +43,8 @@ class PitchTimeModule(nn.Module):
 
         self.bn = nn.BatchNorm2d(32, eps=1e-5, momentum=0.01, affine=True)
 
+        self.cbam = CBAM(32)
+
         self.leaky = nn.LeakyReLU(inplace=True)
 
         self.apply(weights_init)
@@ -47,6 +53,7 @@ class PitchTimeModule(nn.Module):
         out = self.pitch(x)
         out = self.time(out)
         out = self.bn(out)
+        out = self.cbam(out)
         out = self.leaky(out)
 
         return out
@@ -64,6 +71,8 @@ class ResidualModule(nn.Module):
         self.bn1 = nn.BatchNorm2d(channel, eps=1e-5, momentum=0.01, affine=True)
         self.bn2 = nn.BatchNorm2d(channel, eps=1e-5, momentum=0.01, affine=True)
 
+        self.cbam = CBAM(channel)
+
         self.relu = nn.ReLU(inplace=True)
 
         self.apply(weights_init)
@@ -75,6 +84,8 @@ class ResidualModule(nn.Module):
 
         out = self.conv2(out)
         out = self.bn2(out)
+
+        out = self.cbam(out)
 
         out = x + out
 
@@ -92,6 +103,8 @@ class PoolingModule(nn.Module):
 
         self.bn = nn.BatchNorm2d(out_channel, eps=1e-5, momentum=0.01, affine=True)
 
+        self.cbam = CBAM(out_channel)
+
         self.relu = nn.ReLU(inplace=True)
 
         self.apply(weights_init)
@@ -99,6 +112,7 @@ class PoolingModule(nn.Module):
     def forward(self, x):
         out = self.conv(x)
         out = self.bn(out)
+        out = self.cbam(out)
         out = self.relu(out)
 
         return out

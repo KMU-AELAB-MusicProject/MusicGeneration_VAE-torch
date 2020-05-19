@@ -7,7 +7,7 @@ class Loss(nn.Module):
         super().__init__()
         self.loss = nn.BCELoss()
 
-    def forward(self, logits, labels, mean, var, pre_mean, pre_var):
+    def forward(self, logits, labels, mean, var, pre_mean, pre_var, gan_loss=0.0):
         recon_loss = self.loss(logits, labels)
         elbo = (torch.sum(1 + var - mean.pow(2) - var.exp()) + torch.sum(1 + var - pre_mean.pow(2) - pre_var.exp())) / 2
 
@@ -15,7 +15,10 @@ class Loss(nn.Module):
         additional_loss = (torch.gt(labels - out, 0.0001).type('torch.cuda.FloatTensor')).mean()
 
         # reconstruction error + KLD + gan_loss
-        return (recon_loss + additional_loss * 0.8) - (0.5 * elbo) # - torch.log(gan_loss).mean()
+        if gan_loss == 0.0:
+            return (recon_loss + additional_loss * 0.8) - (0.5 * elbo)
+        else:
+            return ((recon_loss + additional_loss * 0.8) - (0.5 * elbo)) * 0.8 + gan_loss
 
 
 class PhraseLoss(nn.Module):
@@ -38,5 +41,5 @@ class DLoss(nn.Module):
         super().__init__()
         self.loss = nn.BCELoss()
 
-    def forward(self, f_logits, r_logits):
-        return -((torch.log(r_logits).mean()) + torch.log(1 - f_logits).mean())
+    def forward(self, outputs, targets):
+        return self.loss(outputs, targets)
