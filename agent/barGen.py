@@ -183,7 +183,7 @@ class BarGen(object):
             print("You have entered CTRL+C.. Wait to finalize")
 
     def train(self):
-        for epoch in range(0):
+        for epoch in range(self.config.vae_epoch):
             self.vae_epoch += 1
             is_best, loss = self.train_vae()
 
@@ -193,7 +193,7 @@ class BarGen(object):
 
             print('{}epoch loss: {}, lr: {}'.format(self.vae_epoch, loss, lr))
 
-        for epoch in range(self.config.epoch):
+        for epoch in range(self.config.gan_epoch):
             self.gan_epoch += 1
 
             train_gen = True
@@ -203,7 +203,7 @@ class BarGen(object):
             is_best, loss = self.train_gan(train_gen)
 
             if train_gen:
-                self.save_checkpoint(self.config.checkpoint_file, epoch, is_best)
+                self.save_checkpoint(self.config.checkpoint_file, epoch)
 
             lr = 0.
             for param_group in self.opt_gen.param_groups:
