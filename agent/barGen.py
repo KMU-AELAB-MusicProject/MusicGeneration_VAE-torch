@@ -196,6 +196,11 @@ class BarGen(object):
             pre_phrase = pre_phrase.cuda(async=self.config.async_loading)
             position = position.cuda(async=self.config.async_loading)
 
+            note = Variable(note)
+            pre_note = Variable(pre_note)
+            pre_phrase = Variable(pre_phrase)
+            position = Variable(position)
+
             ####################
             self.generator.zero_grad()
             self.discriminator.zero_grad()
@@ -209,8 +214,7 @@ class BarGen(object):
 
             self.frozen(self.generator)
 
-            gen_note, z, pre_z, phrase_feature = self.generator(Variable(note), Variable(pre_note),
-                                                                Variable(pre_phrase), Variable(position))
+            gen_note, z, pre_z, phrase_feature = self.generator(note, pre_note, pre_phrase, position)
 
             #### Phrase Feature ###
             phrase_fake = torch.randn(phrase_feature.size(0), phrase_feature.size(1)).cuda()
@@ -251,8 +255,7 @@ class BarGen(object):
             self.frozen(self.z_discriminator_bar)
             self.frozen(self.z_discriminator_phrase)
 
-            gen_note, z, pre_z, phrase_feature = self.generator(Variable(note), Variable(pre_note),
-                                                                Variable(pre_phrase), Variable(position))
+            gen_note, z, pre_z, phrase_feature = self.generator(note, pre_note, pre_phrase, position)
 
             #### Discriminator Loss ###
             gan_loss = self.loss_disc(self.z_discriminator_phrase(phrase_feature), 1)
