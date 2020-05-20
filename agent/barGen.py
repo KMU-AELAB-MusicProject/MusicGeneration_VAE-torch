@@ -33,7 +33,7 @@ class BarGen(object):
 
         # define dataloader
         self.dataset = NoteDataset(self.config.root_path, self.config)
-        self.dataloader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=False, num_workers=2,
+        self.dataloader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=False, num_workers=3,
                                      pin_memory=self.config.pin_memory, collate_fn=self.make_batch)
 
         # define models ( generator and discriminator)
