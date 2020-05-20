@@ -21,6 +21,6 @@ class DLoss(nn.Module):
 
     def forward(self, outputs, target=0):
         if target == 1:
-            return torch.log(1 - outputs).mean()
+            return torch.log(1. - outputs).mean()
         else:
             return torch.log(outputs).mean()
