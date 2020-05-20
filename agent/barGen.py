@@ -214,7 +214,7 @@ class BarGen(object):
             self.z_discriminator_bar.zero_grad()
             self.z_discriminator_phrase.zero_grad()
 
-            if self.epoch % 2:
+            if (curr_it + self.epoch) % 2:
                 #################### Discriminator ####################
                 self.free(self.discriminator)
                 self.free(self.z_discriminator_bar)
@@ -303,6 +303,5 @@ class BarGen(object):
         self.scheduler_Zdiscriminator_bar.step(avg_barZ_disc_loss)
         self.scheduler_Zdiscriminator_phrase.step(avg_phraseZ_disc_loss)
 
-        if not self.epoch % 2:
-            self.summary_writer.add_image("epoch/sample image", image_sample, self.epoch)
+        self.summary_writer.add_image("epoch/sample image", image_sample, self.epoch)
 
