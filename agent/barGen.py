@@ -212,81 +212,81 @@ class BarGen(object):
             self.z_discriminator_bar.zero_grad()
             self.z_discriminator_phrase.zero_grad()
 
-            #################### Discriminator ####################
-            self.free(self.discriminator)
-            self.free(self.z_discriminator_bar)
-            self.free(self.z_discriminator_phrase)
+            if curr_it % 2 == 1:
+                #################### Discriminator ####################
+                self.free(self.discriminator)
+                self.free(self.z_discriminator_bar)
+                self.free(self.z_discriminator_phrase)
 
-            self.frozen(self.generator)
+                self.frozen(self.generator)
 
-            gen_note, z, pre_z, phrase_feature = self.generator(note, pre_note, pre_phrase, position)
+                gen_note, z, pre_z, phrase_feature = self.generator(note, pre_note, pre_phrase, position)
 
-            #### Phrase Feature ###
-            phrase_fake = torch.randn(phrase_feature.size(0), phrase_feature.size(1)).cuda()
-            d_phrase_fake = self.z_discriminator_phrase(phrase_fake)
-            d_phrase_real = self.z_discriminator_phrase(phrase_feature)
-            phraseZ_dics_loss = self.loss_disc(d_phrase_real, 1) + self.loss_disc(d_phrase_fake)
+                #### Phrase Feature ###
+                phrase_fake = torch.randn(phrase_feature.size(0), phrase_feature.size(1)).cuda()
+                d_phrase_fake = self.z_discriminator_phrase(phrase_fake)
+                d_phrase_real = self.z_discriminator_phrase(phrase_feature)
+                phraseZ_dics_loss = self.loss_disc(d_phrase_real, 1) + self.loss_disc(d_phrase_fake)
 
-            #### Bar Feature ####
-            bar_fake = torch.randn(z.size(0) * 2, z.size(1)).cuda()
-            d_bar_fake = self.z_discriminator_bar(bar_fake)
-            d_bar_real1 = self.z_discriminator_bar(z)
-            d_bar_real2 = self.z_discriminator_bar(pre_z)
-            barZ_dics_loss = self.loss_disc(d_bar_real1, 1) + self.loss_disc(d_bar_real2, 1) + self.loss_disc(d_bar_fake)
+                #### Bar Feature ####
+                bar_fake = torch.randn(z.size(0) * 2, z.size(1)).cuda()
+                d_bar_fake = self.z_discriminator_bar(bar_fake)
+                d_bar_real1 = self.z_discriminator_bar(z)
+                d_bar_real2 = self.z_discriminator_bar(pre_z)
+                barZ_dics_loss = self.loss_disc(d_bar_real1, 1) + self.loss_disc(d_bar_real2, 1) + self.loss_disc(d_bar_fake)
 
-            #### Generated Bar ####
-            fake_note = torch.gt(gen_note, 0.35).type('torch.cuda.FloatTensor')
-            fake_note = torch.cat((pre_note, fake_note), dim=2)
-            d_fake = self.discriminator(fake_note).view(-1)
+                #### Generated Bar ####
+                fake_note = torch.gt(gen_note, 0.35).type('torch.cuda.FloatTensor')
+                fake_note = torch.cat((pre_note, fake_note), dim=2)
+                d_fake = self.discriminator(fake_note).view(-1)
 
-            real_note = torch.cat((pre_note, note), dim=2)
-            d_real = self.discriminator(real_note).view(-1)
+                real_note = torch.cat((pre_note, note), dim=2)
+                d_real = self.discriminator(real_note).view(-1)
 
-            disc_loss = self.loss_disc(d_fake) + self.loss_disc(d_real, 1)
+                disc_loss = self.loss_disc(d_fake) + self.loss_disc(d_real, 1)
 
-            #######################
-            disc_loss.backward(retain_graph=True)
-            phraseZ_dics_loss.backward(retain_graph=True)
-            barZ_dics_loss.backward(retain_graph=True)
+                #######################
+                disc_loss.backward(retain_graph=True)
+                phraseZ_dics_loss.backward(retain_graph=True)
+                barZ_dics_loss.backward(retain_graph=True)
 
-            self.opt_discriminator.step()
-            self.opt_Zdiscriminator_bar.step()
-            self.opt_Zdiscriminator_phrase.step()
+                self.opt_discriminator.step()
+                self.opt_Zdiscriminator_bar.step()
+                self.opt_Zdiscriminator_phrase.step()
 
-            #################### Generator ####################
-            self.free(self.generator)
+                avg_disc_loss.update(disc_loss)
+                avg_barZ_disc_loss.update(barZ_dics_loss)
+                avg_phraseZ_disc_loss.update(phraseZ_dics_loss)
 
-            self.frozen(self.discriminator)
-            self.frozen(self.z_discriminator_bar)
-            self.frozen(self.z_discriminator_phrase)
+            else:
+                #################### Generator ####################
+                self.free(self.generator)
 
-            gen_note, z, pre_z, phrase_feature = self.generator(note, pre_note, pre_phrase, position)
+                self.frozen(self.discriminator)
+                self.frozen(self.z_discriminator_bar)
+                self.frozen(self.z_discriminator_phrase)
 
-            #### Discriminator Loss ###
-            gan_loss = self.loss_disc(self.z_discriminator_phrase(phrase_feature), 1)
+                gen_note, z, pre_z, phrase_feature = self.generator(note, pre_note, pre_phrase, position)
 
-            gan_loss += self.loss_disc(self.z_discriminator_bar(z), 1) + \
-                        self.loss_disc(self.z_discriminator_bar(pre_z), 1)
+                #### Discriminator Loss ###
+                gan_loss = self.loss_disc(self.z_discriminator_phrase(phrase_feature), 1)
 
-            fake_note = torch.gt(gen_note, 0.35).type('torch.cuda.FloatTensor')
-            fake_note = torch.cat((pre_note, fake_note), dim=2)
-            d_fake = self.discriminator(fake_note).view(-1)
+                gan_loss += self.loss_disc(self.z_discriminator_bar(z), 1) + \
+                            self.loss_disc(self.z_discriminator_bar(pre_z), 1)
 
-            gan_loss += self.loss_disc(d_fake, 1)
+                fake_note = torch.gt(gen_note, 0.35).type('torch.cuda.FloatTensor')
+                fake_note = torch.cat((pre_note, fake_note), dim=2)
+                d_fake = self.discriminator(fake_note).view(-1)
 
-            gen_loss = self.loss_gen(gen_note, note, gan_loss)
+                gan_loss += self.loss_disc(d_fake, 1)
 
-            gen_loss.backward(retain_graph=True)
+                gen_loss = self.loss_gen(gen_note, note, gan_loss)
 
-            self.opt_gen.step()
+                gen_loss.backward(retain_graph=True)
 
-            ####################
-            avg_gen_loss.update(gen_loss.item())
-            avg_disc_loss.update(disc_loss)
-            avg_barZ_disc_loss.update(barZ_dics_loss)
-            avg_phraseZ_disc_loss.update(phraseZ_dics_loss)
+                self.opt_gen.step()
 
-            self.vae_iteration += 1
+                avg_gen_loss.update(gen_loss.item())
 
         tqdm_batch.close()
 
