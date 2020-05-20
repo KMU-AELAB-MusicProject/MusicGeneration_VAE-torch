@@ -19,7 +19,7 @@ class DLoss(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def forward(self, outputs, target: int):
+    def forward(self, outputs, target=0):
         if target == 1:
             return torch.log(1 - outputs).mean()
         else:
