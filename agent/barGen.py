@@ -246,9 +246,9 @@ class BarGen(object):
                 disc_loss = self.loss_disc(d_fake) + self.loss_disc(d_real, 1)
 
                 #######################
-                disc_loss.backward(retain_graph=True)
-                phraseZ_dics_loss.backward(retain_graph=True)
-                barZ_dics_loss.backward(retain_graph=True)
+                disc_loss.backward()
+                phraseZ_dics_loss.backward()
+                barZ_dics_loss.backward()
 
                 self.opt_discriminator.step()
                 self.opt_Zdiscriminator_bar.step()
@@ -282,7 +282,7 @@ class BarGen(object):
 
                 gen_loss = self.loss_gen(gen_note, note, gan_loss)
 
-                gen_loss.backward(retain_graph=True)
+                gen_loss.backward()
 
                 self.opt_gen.step()
 
