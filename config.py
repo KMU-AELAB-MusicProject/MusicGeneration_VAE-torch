@@ -1,7 +1,6 @@
 class Config(object):
-    vae_epoch = 400
-    gan_epoch = 2000
-    batch_size = 3
+    epoch = 5000
+    batch_size = 2
     learning_rate = 0.001
 
     cuda = True
