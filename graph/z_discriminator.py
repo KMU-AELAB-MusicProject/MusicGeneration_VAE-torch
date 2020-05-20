@@ -15,11 +15,11 @@ class PhraseZDiscriminator(nn.Module):
             nn.ReLU(True),
             nn.Linear(512, 512),
             nn.ReLU(True),
-            nn.Linear(512, 512),
+            nn.Linear(512, 320),
             nn.ReLU(True),
-            nn.Linear(512, 512),
+            nn.Linear(320, 320),
             nn.ReLU(True),
-            nn.Linear(512, 1),
+            nn.Linear(320, 1),
             nn.Sigmoid()
         )
 
@@ -40,11 +40,11 @@ class BarZDiscriminator(nn.Module):
             nn.ReLU(True),
             nn.Linear(512, 512),
             nn.ReLU(True),
-            nn.Linear(512, 512),
+            nn.Linear(512, 320),
             nn.ReLU(True),
-            nn.Linear(512, 512),
+            nn.Linear(320, 320),
             nn.ReLU(True),
-            nn.Linear(512, 1),
+            nn.Linear(320, 1),
             nn.Sigmoid()
         )
 
