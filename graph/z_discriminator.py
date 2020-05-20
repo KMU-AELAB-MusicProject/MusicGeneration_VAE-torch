@@ -11,15 +11,15 @@ class PhraseZDiscriminator(nn.Module):
         self.z_dim = z_dim
 
         self.net = nn.Sequential(
-            nn.Linear(z_dim, 384‬),
+            nn.Linear(z_dim, 384),
             nn.ReLU(True),
-            nn.Linear(384‬, 384‬),
+            nn.Linear(384, 384),
             nn.ReLU(True),
-            nn.Linear(384‬, 384‬),
+            nn.Linear(384, 384),
             nn.ReLU(True),
-            nn.Linear(384‬, 384‬),
+            nn.Linear(384, 384),
             nn.ReLU(True),
-            nn.Linear(384‬, 1),
+            nn.Linear(384, 1),
             nn.Sigmoid()
         )
 
@@ -36,15 +36,15 @@ class BarZDiscriminator(nn.Module):
         self.z_dim = z_dim
 
         self.net = nn.Sequential(
-            nn.Linear(z_dim, 384‬),
+            nn.Linear(z_dim, 384),
             nn.ReLU(True),
-            nn.Linear(384‬, 384‬),
+            nn.Linear(384, 384),
             nn.ReLU(True),
-            nn.Linear(384‬, 384‬),
+            nn.Linear(384, 384),
             nn.ReLU(True),
-            nn.Linear(384‬, 384‬),
+            nn.Linear(384, 384),
             nn.ReLU(True),
-            nn.Linear(384‬, 1),
+            nn.Linear(384, 1),
             nn.Sigmoid()
         )
 
