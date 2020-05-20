@@ -17,8 +17,6 @@ class PhraseZDiscriminator(nn.Module):
             nn.ReLU(True),
             nn.Linear(384, 384),
             nn.ReLU(True),
-            nn.Linear(384, 384),
-            nn.ReLU(True),
             nn.Linear(384, 1),
             nn.Sigmoid()
         )
@@ -37,8 +35,6 @@ class BarZDiscriminator(nn.Module):
 
         self.net = nn.Sequential(
             nn.Linear(z_dim, 384),
-            nn.ReLU(True),
-            nn.Linear(384, 384),
             nn.ReLU(True),
             nn.Linear(384, 384),
             nn.ReLU(True),
