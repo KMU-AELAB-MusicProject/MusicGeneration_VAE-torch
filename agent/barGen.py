@@ -92,6 +92,11 @@ class BarGen(object):
         self.z_discriminator_bar = nn.DataParallel(self.z_discriminator_bar, device_ids=gpu_list)
         self.z_discriminator_phrase = nn.DataParallel(self.z_discriminator_phrase, device_ids=gpu_list)
 
+        self.generator = self.generator.cuda()
+        self.discriminator = self.discriminator.cuda()
+        self.z_discriminator_bar = self.z_discriminator_bar.cuda()
+        self.z_discriminator_phrase = self.z_discriminator_phrase.cuda()
+
         # Model Loading from the latest checkpoint if not found start from scratch.
         self.load_checkpoint(self.config.checkpoint_file)
 
