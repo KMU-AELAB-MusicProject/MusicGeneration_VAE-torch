@@ -29,7 +29,7 @@ class Model(nn.Module):
 
             gen_note = self.decoder(feature)
             
-            return gen_note, z, pre_z
+            return gen_note, z, pre_z, phrase_feature
         else:
             phrase_feature = self.phrase_encoder(phrase, position)
 
