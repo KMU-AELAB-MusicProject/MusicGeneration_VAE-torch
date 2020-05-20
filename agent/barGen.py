@@ -178,10 +178,10 @@ class BarGen(object):
     def train(self):
         for epoch in range(self.config.epoch):
             self.epoch += 1
-            self.train()
+            self.train_epoch()
             self.save_checkpoint(self.config.checkpoint_file, epoch)
 
-    def train(self):
+    def train_epoch(self):
         tqdm_batch = tqdm(self.dataloader, total=self.dataset.num_iterations,
                           desc="epoch-{}".format(self.epoch))
 
