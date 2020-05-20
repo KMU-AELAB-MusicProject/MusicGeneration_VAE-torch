@@ -13,11 +13,11 @@ from torch.backends import cudnn
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from graph.model import Model
-from graph.phrase_encoder import PhraseModel
 from graph.bar_discriminator import BarDiscriminator
+from graph.z_discriminator import PhraseZDiscriminator, BarZDiscriminator
 
-from graph.loss.bar_loss import Loss, PhraseLoss, DLoss
-from data.bar_dataset import NoteDataset, TestDataset
+from graph.loss.bar_loss import Loss, DLoss
+from data.bar_dataset import NoteDataset
 
 from metrics import AverageMeter
 from tensorboardX import SummaryWriter
@@ -36,56 +36,46 @@ class BarGen(object):
         self.dataloader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=False, num_workers=2,
                                      pin_memory=self.config.pin_memory, collate_fn=self.make_batch)
 
-        self.testset = TestDataset(self.config.root_path, self.config)
-        self.testloader = DataLoader(self.testset, batch_size=self.batch_size, shuffle=False, num_workers=2,
-                                     pin_memory=self.config.pin_memory, collate_fn=self.make_batch)
-
         # define models ( generator and discriminator)
         self.generator = Model()
         self.discriminator = BarDiscriminator()
-        self.phrase = PhraseModel([64, 128, 256, 512, 1024])
+        self.z_discriminator_phrase = PhraseZDiscriminator()
+        self.z_discriminator_bar = BarZDiscriminator()
 
         # define loss
         self.loss_gen = Loss().cuda()
         self.loss_disc = DLoss().cuda()
-        self.loss_phrase = PhraseLoss().cuda()
 
         # define lr
         self.lr_gen = self.config.learning_rate
-        self.lr_phrase = self.config.learning_rate
-
-        self.GAN_lr_gen = self.config.learning_rate / 2
-        self.GAN_lr_disc = self.config.learning_rate / 2
-        self.GAN_lr_phrase = self.config.learning_rate / 2
+        self.lr_discriminator = self.config.learning_rate
+        self.lr_Zdiscriminator_bar = self.config.learning_rate
+        self.lr_Zdiscriminator_phrase = self.config.learning_rate
 
         # define optimizer
         self.opt_gen = torch.optim.Adam(self.generator.parameters(), lr=self.lr_gen)
-        self.opt_phrase = torch.optim.Adam(self.phrase.parameters(), lr=self.lr_phrase)
-
-        self.GAN_opt_gen = torch.optim.Adam(self.discriminator.parameters(), lr=self.GAN_lr_gen)
-        self.GAN_opt_disc = torch.optim.Adam(self.discriminator.parameters(), lr=self.GAN_lr_disc)
-        self.GAN_opt_phrase = torch.optim.Adam(self.discriminator.parameters(), lr=self.GAN_lr_phrase)
+        self.opt_discriminator = torch.optim.Adam(self.discriminator.parameters(), lr=self.lr_discriminator)
+        self.opt_Zdiscriminator_bar = torch.optim.Adam(self.z_discriminator_bar.parameters(),
+                                                       lr=self.lr_Zdiscriminator_bar)
+        self.opt_Zdiscriminator_phrase = torch.optim.Adam(self.z_discriminator_phrase.parameters(),
+                                                          lr=self.lr_Zdiscriminator_phrase)
 
         # define optimize scheduler
         self.scheduler_gen = torch.optim.lr_scheduler.ReduceLROnPlateau(self.opt_gen, mode='min', factor=0.8,
                                                                         cooldown=5)
-        self.scheduler_phrase = torch.optim.lr_scheduler.ReduceLROnPlateau(self.opt_phrase, mode='min', factor=0.8,
-                                                                           cooldown=5)
-
-        self.scheduler_GAN_gen = torch.optim.lr_scheduler.ReduceLROnPlateau(self.GAN_opt_gen, mode='min', factor=0.8,
-                                                                            cooldown=5)
-        self.scheduler_GAN_disc = torch.optim.lr_scheduler.ReduceLROnPlateau(self.GAN_opt_disc, mode='min', factor=0.8,
-                                                                             cooldown=5)
-        self.scheduler_GAN_phrase = torch.optim.lr_scheduler.ReduceLROnPlateau(self.GAN_opt_phrase, mode='min',
-                                                                               factor=0.8, cooldown=5)
+        self.scheduler_discriminator = torch.optim.lr_scheduler.ReduceLROnPlateau(self.opt_discriminator, mode='min',
+                                                                                  factor=0.8, cooldown=5)
+        self.scheduler_Zdiscriminator_bar = torch.optim.lr_scheduler.ReduceLROnPlateau(self.opt_Zdiscriminator_bar,
+                                                                                       mode='min', factor=0.8,
+                                                                                       cooldown=5)
+        self.scheduler_Zdiscriminator_phrase = torch.optim.lr_scheduler.ReduceLROnPlateau(self.opt_Zdiscriminator_phrase,
+                                                                                          mode='min', factor=0.8,
+                                                                                          cooldown=5)
 
         # initialize counter
         self.vae_iteration = 0
         self.gan_iteration = 0
-        self.vae_epoch = 0
-        self.gan_epoch = 0
-        self.vae_best = 9999999999.
-        self.gan_best = 9999999999.
+        self.epoch = 0
 
         self.manual_seed = random.randint(1, 10000)
 
@@ -96,13 +86,11 @@ class BarGen(object):
         print("seed: ", self.manual_seed)
 
         # cuda setting
-        self.generator = nn.DataParallel(self.generator, device_ids=list(range(self.config.gpu_cnt)))
-        self.discriminator = nn.DataParallel(self.discriminator, device_ids=list(range(self.config.gpu_cnt)))
-        self.phrase = nn.DataParallel(self.phrase, device_ids=list(range(self.config.gpu_cnt)))
-
-        self.generator = self.generator.cuda()
-        self.discriminator = self.discriminator.cuda()
-        self.phrase = self.phrase.cuda()
+        gpu_list = list(range(self.config.gpu_cnt))
+        self.generator = nn.DataParallel(self.generator, device_ids=gpu_list)
+        self.discriminator = nn.DataParallel(self.discriminator, device_ids=gpu_list)
+        self.z_discriminator_bar = nn.DataParallel(self.z_discriminator_bar, device_ids=gpu_list)
+        self.z_discriminator_phrase = nn.DataParallel(self.z_discriminator_phrase, device_ids=gpu_list)
 
         # Model Loading from the latest checkpoint if not found start from scratch.
         self.load_checkpoint(self.config.checkpoint_file)
@@ -113,7 +101,8 @@ class BarGen(object):
 
         print('Number of generator parameters: {}'.format(sum([p.data.nelement() for p in self.generator.parameters()])))
         print('Number of discriminator parameters: {}'.format(sum([p.data.nelement() for p in self.discriminator.parameters()])))
-        print('Number of phrase parameters: {}'.format(sum([p.data.nelement() for p in self.phrase.parameters()])))
+        print('Number of barZ discriminator parameters: {}'.format(sum([p.data.nelement() for p in self.z_discriminator_bar.parameters()])))
+        print('Number of phraseZ discriminator parameters: {}'.format(sum([p.data.nelement() for p in self.z_discriminator_phrase.parameters()])))
 
     def make_batch(self, samples):
         note = np.concatenate([sample['note'] for sample in samples], axis=0)
@@ -140,14 +129,15 @@ class BarGen(object):
 
             self.generator.load_state_dict(checkpoint['generator_state_dict'])
             self.opt_gen.load_state_dict(checkpoint['gen_optimizer'])
-            self.GAN_opt_gen.load_state_dict(checkpoint['GAN_gen_optimizer'])
-
-            self.phrase.load_state_dict(checkpoint['phrase_state_dict'])
-            self.opt_phrase.load_state_dict(checkpoint['phrase_optimizer'])
-            self.GAN_opt_phrase.load_state_dict(checkpoint['GAN_phrase_optimizer'])
 
             self.discriminator.load_state_dict(checkpoint['discriminator_state_dict'])
-            self.GAN_opt_disc.load_state_dict(checkpoint['GAN_disc_optimizer'])
+            self.opt_discriminator.load_state_dict(checkpoint['disc_optimizer'])
+
+            self.z_discriminator_bar.load_state_dict(checkpoint['z_discriminator_bar_state_dict'])
+            self.opt_Zdiscriminator_bar.load_state_dict(checkpoint['opt_Zdiscriminator_bar_optimizer'])
+
+            self.z_discriminator_phrase.load_state_dict(checkpoint['z_discriminator_phrase_state_dict'])
+            self.opt_Zdiscriminator_phrase.load_state_dict(checkpoint['opt_Zdiscriminator_phrase_optimizer'])
 
         except OSError as e:
             print("No checkpoint exists from '{}'. Skipping...".format(self.config.checkpoint_dir))
@@ -158,17 +148,15 @@ class BarGen(object):
         # file_name = os.path.join(self.config.root_path, self.config.checkpoint_dir, file_name)
 
         state = {
-            'epoch': self.current_epoch,
+            'epoch': self.epoch,
             'generator_state_dict': self.generator.state_dict(),
-            'gen_optimizer': self.opt_gen,
-            'GAN_gen_optimizer': self.GAN_opt_gen,
-
-            'phrase_state_dict': self.phrase,
-            'phrase_optimizer': self.opt_phrase,
-            'GAN_phrase_optimizer': self.GAN_opt_phrase,
-
-            'discriminator_state_dict': self.discriminator,
-            'GAN_disc_optimizer': self.GAN_opt_disc,
+            'gen_optimizer': self.opt_gen.state_dict(),
+            'discriminator_state_dict': self.discriminator.state_dict(),
+            'disc_optimizer': self.opt_discriminator.state_dict(),
+            'z_discriminator_bar_state_dict': self.z_discriminator_bar.state_dict(),
+            'opt_Zdiscriminator_bar_optimizer': self.opt_Zdiscriminator_bar.state_dict(),
+            'z_discriminator_phrase_state_dict': self.z_discriminator_phrase.state_dict(),
+            'opt_Zdiscriminator_phrase_optimizer': self.opt_Zdiscriminator_phrase.state_dict(),
         }
 
         torch.save(state, tmp_name)
@@ -183,43 +171,24 @@ class BarGen(object):
             print("You have entered CTRL+C.. Wait to finalize")
 
     def train(self):
-        for epoch in range(self.config.vae_epoch):
-            self.vae_epoch += 1
-            is_best, loss = self.train_vae()
+        for epoch in range(self.config.epoch):
+            self.epoch += 1
+            self.train()
+            self.save_checkpoint(self.config.checkpoint_file, epoch)
 
-            lr = 0.
-            for param_group in self.opt_gen.param_groups:
-                lr = param_group['lr']
-
-            print('{}epoch loss: {}, lr: {}'.format(self.vae_epoch, loss, lr))
-
-        for epoch in range(self.config.gan_epoch):
-            self.gan_epoch += 1
-
-            train_gen = True
-            if self.test_disc() < 0.65:
-                train_gen = False
-            print(train_gen)
-            is_best, loss = self.train_gan(train_gen)
-
-            if train_gen:
-                self.save_checkpoint(self.config.checkpoint_file, epoch)
-
-            lr = 0.
-            for param_group in self.opt_gen.param_groups:
-                lr = param_group['lr']
-
-            print('{}epoch loss: {}, lr: {}'.format(self.gan_epoch, loss, lr))
-
-    def train_vae(self):
+    def train(self):
         tqdm_batch = tqdm(self.dataloader, total=self.dataset.num_iterations,
-                          desc="epoch-{}".format(self.vae_epoch))
+                          desc="epoch-{}".format(self.epoch))
 
         self.generator.train()
-        self.phrase.train()
+        self.discriminator.train()
+        self.z_discriminator_bar.train()
+        self.z_discriminator_phrase.train()
 
-        gen_avg_loss = AverageMeter()
-        phrase_avg_loss = AverageMeter()
+        avg_gen_loss = AverageMeter()
+        avg_disc_loss = AverageMeter()
+        avg_barZ_disc_loss = AverageMeter()
+        avg_phraseZ_disc_loss = AverageMeter()
 
         for curr_it, (note, pre_note, pre_phrase, position) in enumerate(tqdm_batch):
             note = note.cuda(async=self.config.async_loading)
@@ -229,197 +198,97 @@ class BarGen(object):
 
             ####################
             self.generator.zero_grad()
-            self.phrase.zero_grad()
+            self.discriminator.zero_grad()
+            self.z_discriminator_bar.zero_grad()
+            self.z_discriminator_phrase.zero_grad()
+
+            #################### Discriminator ####################
+            self.free(self.discriminator)
+            self.free(self.z_discriminator_bar)
+            self.free(self.z_discriminator_phrase)
+
+            self.frozen(self.generator)
+
+            gen_note, z, pre_z, phrase_feature = self.generator(Variable(note), Variable(pre_note),
+                                                                Variable(pre_phrase), Variable(position))
+
+            #### Phrase Feature ###
+            phrase_fake = torch.randn(phrase_feature.size(0), phrase_feature.size(1)).cuda()
+            d_phrase_fake = self.z_discriminator_phrase(phrase_fake)
+            d_phrase_real = self.z_discriminator_phrase(phrase_feature)
+            phraseZ_dics_loss = self.loss_disc(d_phrase_real, 1) + self.loss_disc(d_phrase_fake)
+
+            #### Bar Feature ####
+            bar_fake = torch.randn(z.size(0) * 2, z.size(1)).cuda()
+            d_bar_fake = self.z_discriminator_bar(bar_fake)
+            d_bar_real1 = self.z_discriminator_bar(z)
+            d_bar_real2 = self.z_discriminator_bar(pre_z)
+            barZ_dics_loss = self.loss_disc(d_bar_real1, 1) + self.loss_disc(d_bar_real2, 1) + self.loss_disc(d_bar_fake)
+
+            #### Generated Bar ####
+            fake_note = torch.gt(gen_note, 0.35).type('torch.cuda.FloatTensor')
+            fake_note = torch.cat((pre_note, fake_note), dim=2)
+            d_fake = self.discriminator(fake_note).view(-1)
+
+            real_note = torch.cat((pre_note, note), dim=2)
+            d_real = self.discriminator(real_note).view(-1)
+
+            disc_loss = self.loss_disc(d_fake) + self.loss_disc(d_real, 1)
+
+            #######################
+            disc_loss.backward(retain_graph=True)
+            phraseZ_dics_loss.backward(retain_graph=True)
+            barZ_dics_loss.backward(retain_graph=True)
+
+            self.opt_discriminator.step()
+            self.opt_Zdiscriminator_bar.step()
+            self.opt_Zdiscriminator_phrase.step()
 
             #################### Generator ####################
             self.free(self.generator)
-            self.frozen(self.phrase)
 
-            phrase_feature, _, _ = self.phrase(pre_phrase, position)
-            gen_note, mean, var, pre_mean, pre_var = self.generator(note, pre_note, phrase_feature)
+            self.frozen(self.discriminator)
+            self.frozen(self.z_discriminator_bar)
+            self.frozen(self.z_discriminator_phrase)
 
-            gen_loss = self.loss_gen(gen_note, note, mean, var, pre_mean, pre_var)
+            gen_note, z, pre_z, phrase_feature = self.generator(Variable(note), Variable(pre_note),
+                                                                Variable(pre_phrase), Variable(position))
+
+            #### Discriminator Loss ###
+            gan_loss = self.loss_disc(self.z_discriminator_phrase(phrase_feature), 1)
+
+            gan_loss += self.loss_disc(self.z_discriminator_bar(z), 1) + \
+                        self.loss_disc(self.z_discriminator_bar(pre_z), 1)
+
+            fake_note = torch.gt(gen_note, 0.35).type('torch.cuda.FloatTensor')
+            fake_note = torch.cat((pre_note, fake_note), dim=2)
+            d_fake = self.discriminator(fake_note).view(-1)
+
+            gan_loss += self.loss_disc(d_fake, 1)
+
+            gen_loss = self.loss_gen(gen_note, note, gan_loss)
+
             gen_loss.backward(retain_graph=True)
+
             self.opt_gen.step()
 
-            #################### Phrase Encoder ####################
-            self.free(self.phrase)
-            self.frozen(self.generator)
-
-            phrase_feature, mean, var = self.phrase(pre_phrase, position)
-            gen_note, _, _, _, _ = self.generator(note, pre_note, phrase_feature)
-
-            phrase_loss = self.loss_phrase(gen_note, note, mean, var)
-            phrase_loss.backward(retain_graph=True)
-            self.opt_phrase.step()
-
             ####################
-            gen_avg_loss.update(gen_loss.item())
-            phrase_avg_loss.update(phrase_loss.item())
+            avg_gen_loss.update(gen_loss.item())
+            avg_disc_loss.update(disc_loss)
+            avg_barZ_disc_loss.update(barZ_dics_loss)
+            avg_phraseZ_disc_loss.update(phraseZ_dics_loss)
 
             self.vae_iteration += 1
 
-            self.summary_writer.add_scalar("vae/Generator_loss", gen_avg_loss.val, self.vae_iteration)
-            self.summary_writer.add_scalar("vae/Phrase_loss", phrase_avg_loss.val, self.vae_iteration)
-
-        tqdm_batch.close()
-        self.scheduler_gen.step(gen_avg_loss.val)
-        self.scheduler_phrase.step(phrase_avg_loss.val)
-
-        if gen_avg_loss.val < self.vae_best:
-            self.vae_best = gen_avg_loss.val
-            return True, gen_avg_loss.val
-        else:
-            return False, gen_avg_loss.val
-
-    def train_gan(self, train_gen=True):
-        tqdm_batch = tqdm(self.dataloader, total=self.dataset.num_iterations,
-                          desc="epoch-{}-{}".format(self.gan_epoch, 'train gen' if train_gen else 'train disc'))
-
-        self.generator.train()
-        self.discriminator.train()
-        self.phrase.train()
-
-        gen_avg_loss = AverageMeter()
-        disc_avg_loss = AverageMeter()
-        phrase_avg_loss = AverageMeter()
-
-        for curr_it, (note, pre_note, pre_phrase, position) in enumerate(tqdm_batch):
-            note = note.cuda(async=self.config.async_loading)
-            pre_note = pre_note.cuda(async=self.config.async_loading)
-            pre_phrase = pre_phrase.cuda(async=self.config.async_loading)
-            position = position.cuda(async=self.config.async_loading)
-
-            gen_loss, disc_loss = None, None
-
-            ####################
-            if train_gen:
-                self.generator.zero_grad()
-                self.phrase.zero_grad()
-
-                #################### Generator ####################
-                self.free(self.generator)
-                self.frozen(self.phrase)
-                self.frozen(self.discriminator)
-
-                phrase_feature, _, _ = self.phrase(pre_phrase, position)
-                gen_note, mean, var, pre_mean, pre_var = self.generator(note, pre_note, phrase_feature)
-
-                gen_note = torch.gt(gen_note, 0.35).type('torch.cuda.FloatTensor')
-
-                fake_note = torch.cat((pre_note, gen_note), dim=2)
-
-                d_fake = self.discriminator(fake_note).view(-1)
-                target_fake = torch.ones_like(d_fake, dtype=torch.float)
-
-                fake_loss = self.loss_disc(d_fake, target_fake) + 0.00000001
-                gen_loss = self.loss_gen(gen_note, note, mean, var, pre_mean, pre_var, fake_loss)
-
-                gen_loss.backward(retain_graph=True)
-                self.GAN_opt_gen.step()
-
-            else:
-                self.discriminator.zero_grad()
-                self.phrase.zero_grad()
-
-                #################### Generator ####################
-                self.free(self.discriminator)
-                self.frozen(self.phrase)
-                self.frozen(self.generator)
-
-                phrase_feature, _, _ = self.phrase(pre_phrase, position)
-                gen_note, mean, var, pre_mean, pre_var = self.generator(note, pre_note, phrase_feature)
-
-                gen_note = torch.gt(gen_note, 0.35).type('torch.cuda.FloatTensor')
-                fake_note = torch.cat((pre_note, gen_note), dim=2)
-
-                d_fake = self.discriminator(fake_note).view(-1)
-                target_fake = torch.zeros_like(d_fake, dtype=torch.float)
-                fake_loss = self.loss_disc(d_fake, target_fake)
-
-                real_note = fake_note = torch.cat((pre_note, note), dim=2)
-
-                d_real = self.discriminator(real_note).view(-1)
-                target_real = torch.ones_like(d_fake, dtype=torch.float)
-                real_loss = self.loss_disc(d_fake, target_fake)
-
-                disc_loss = fake_loss + real_loss + 0.00000001
-                disc_loss.backward(retain_graph=True)
-                self.GAN_opt_disc.step()
-
-            #################### Phrase Encoder ####################
-            self.free(self.phrase)
-            self.frozen(self.generator)
-            self.frozen(self.discriminator)
-
-            phrase_feature, mean, var = self.phrase(pre_phrase, position)
-            gen_note, _, _, _, _ = self.generator(note, pre_note, phrase_feature)
-
-            phrase_loss = self.loss_phrase(gen_note, note, mean, var)
-            phrase_loss.backward(retain_graph=True)
-            self.GAN_opt_phrase.step()
-
-            ####################
-            self.gan_iteration += 1
-            phrase_avg_loss.update(phrase_loss.item())
-            self.summary_writer.add_scalar("gan/Phrase_loss", phrase_avg_loss.val, self.gan_iteration)
-
-            if train_gen:
-                gen_avg_loss.update(gen_loss.item())
-                self.summary_writer.add_scalar("gan/Generator_loss", gen_avg_loss.val, self.gan_iteration)
-            else:
-                disc_avg_loss.update(disc_loss.item())
-                self.summary_writer.add_scalar("gan/Generator_loss", disc_avg_loss.val, self.gan_iteration)
-
-        tqdm_batch.close()
-        if train_gen:
-            self.scheduler_GAN_gen.step(gen_avg_loss.val)
-        else:
-            self.scheduler_GAN_disc.step(disc_avg_loss.val)
-        self.scheduler_GAN_phrase.step(phrase_avg_loss.val)
-
-        if gen_avg_loss.val < self.gan_best:
-            self.gan_best = gen_avg_loss.val
-            return True, gen_avg_loss.val
-        else:
-            return False, gen_avg_loss.val
-
-    def test_disc(self):
-        tqdm_batch = tqdm(self.testloader, total=self.testset.num_iterations,
-                          desc="Discriminator accuracy check")
-
-        self.generator.eval()
-        self.discriminator.eval()
-        self.phrase.eval()
-
-        avg_loss = AverageMeter()
-
-        for curr_it, (note, pre_note, pre_phrase, position) in enumerate(tqdm_batch):
-            note = note.cuda(async=self.config.async_loading)
-            pre_note = pre_note.cuda(async=self.config.async_loading)
-            pre_phrase = pre_phrase.cuda(async=self.config.async_loading)
-            position = position.cuda(async=self.config.async_loading)
-
-            phrase_feature, _, _ = self.phrase(pre_phrase, position)
-            gen_note, _, _, _, _ = self.generator(note, pre_note, phrase_feature)
-            gen_output = torch.gt(gen_note, 0.35).type('torch.cuda.FloatTensor')
-
-            fake_note = torch.cat((pre_note, gen_output), dim=2)
-            fake_target = torch.zeros(fake_note.size(0))
-            
-            real_note = torch.cat((pre_note, note), dim=2)
-            real_target = torch.ones(real_note.size(0))
-            
-            test_note = torch.cat((fake_note, real_note), dim=0)
-            target = torch.cat((fake_target, real_target), dim=0)
-
-            logits = self.discriminator(test_note).view(-1)
-
-            output = (logits > 0.5).type('torch.FloatTensor')
-
-            avg_loss.update((target == output).sum().float() / target.size(0), target.size(0))
         tqdm_batch.close()
 
-        print('discriminator accuracy: {}'.format(avg_loss.val))
-        self.summary_writer.add_scalar("gan/Discriminator_acc", avg_loss.val, self.gan_epoch)
-        return avg_loss.val
+        self.summary_writer.add_scalar("epoch/Generator_loss", avg_gen_loss.val, self.epoch)
+        self.summary_writer.add_scalar("epoch/Discriminator_loss", avg_disc_loss.val, self.epoch)
+        self.summary_writer.add_scalar("epoch/Bar_Z_Discriminator_loss", avg_barZ_disc_loss.val, self.epoch)
+        self.summary_writer.add_scalar("epoch/Phrase_Z_discriminator_loss", avg_phraseZ_disc_loss.val, self.epoch)
+
+        self.scheduler_gen.step(avg_gen_loss.val)
+        self.scheduler_discriminator.step(avg_disc_loss)
+        self.scheduler_Zdiscriminator_bar.step(avg_barZ_disc_loss)
+        self.scheduler_Zdiscriminator_phrase.step(avg_phraseZ_disc_loss)
+

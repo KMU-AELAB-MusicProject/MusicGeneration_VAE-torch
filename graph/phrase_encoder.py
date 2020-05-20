@@ -20,15 +20,9 @@ class PhraseEncoder(nn.Module):
 
         self.avg = nn.AvgPool2d(kernel_size=(12, 2))
 
-        self.mean = nn.Linear(1024, 1152, bias=False)
-        self.var = nn.Linear(1024, 1152, bias=False)
+        self.linear = nn.Linear(1024, 1152, bias=False)
 
         self.apply(weights_init)
-
-    def reparameterize(self, mean, var):
-        std = torch.exp(0.5 * var)
-        eps = torch.randn_like(std)
-        return mean + eps * std
 
     def forward(self, x):
         pitch = self.pitch_time(x)
@@ -41,12 +35,9 @@ class PhraseEncoder(nn.Module):
 
         out = self.avg(out)
 
-        mean = self.mean(out.view(-1, 1024))
-        var = self.var(out.view(-1, 1024))
+        z = self.linear(out)
 
-        z = self.reparameterize(mean, var)
-
-        return z, mean, var
+        return z
 
 
 class PhraseModel(nn.Module):
@@ -60,7 +51,7 @@ class PhraseModel(nn.Module):
         self.apply(weights_init)
 
     def forward(self, phrase, position):        
-        z_phrase, mean_phrase, var_phrase = self.phrase_encoder(phrase)
+        z_phrase = self.phrase_encoder(phrase)
         phrase_feature = z_phrase + self.position_embedding(position)
 
-        return phrase_feature, mean_phrase, var_phrase
+        return phrase_feature

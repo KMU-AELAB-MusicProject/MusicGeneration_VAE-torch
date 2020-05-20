@@ -19,15 +19,9 @@ class Encoder(nn.Module):
 
         self.avg = nn.AvgPool2d(kernel_size=(3, 2))
 
-        self.mean = nn.Linear(1024, 1152, bias=False)
-        self.var = nn.Linear(1024, 1152, bias=False)
+        self.linear = nn.Linear(1024, 1152)
 
         self.apply(weights_init)
-
-    def reparameterize(self, mean, var):
-        std = torch.exp(0.5 * var)
-        eps = torch.randn_like(std)
-        return mean + eps * std
 
     def forward(self, x):
         time = self.time_pitch(x)
@@ -40,9 +34,6 @@ class Encoder(nn.Module):
 
         out = self.avg(out)
 
-        mean = self.mean(out.view(-1, 1024))
-        var = self.var(out.view(-1, 1024))
+        z = self.linear(out)
 
-        z = self.reparameterize(mean, var)
-
-        return z, mean, var
+        return z
