@@ -34,6 +34,7 @@ class PhraseEncoder(nn.Module):
             out = layer(out)
 
         out = self.avg(out)
+        out = out.view(-1, 1024)
 
         z = self.linear(out)
 
