@@ -299,9 +299,9 @@ class BarGen(object):
         self.summary_writer.add_scalar("epoch/Phrase_Z_discriminator_loss", avg_phraseZ_disc_loss.val, self.epoch)
 
         self.scheduler_gen.step(avg_gen_loss.val)
-        self.scheduler_discriminator.step(avg_disc_loss)
-        self.scheduler_Zdiscriminator_bar.step(avg_barZ_disc_loss)
-        self.scheduler_Zdiscriminator_phrase.step(avg_phraseZ_disc_loss)
+        self.scheduler_discriminator.step(avg_disc_loss.val)
+        self.scheduler_Zdiscriminator_bar.step(avg_barZ_disc_loss.val)
+        self.scheduler_Zdiscriminator_phrase.step(avg_phraseZ_disc_loss.val)
 
         self.summary_writer.add_image("epoch/sample image", image_sample, self.epoch)
 
