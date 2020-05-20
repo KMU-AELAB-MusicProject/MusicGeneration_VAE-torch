@@ -11,8 +11,8 @@ class ChannelAttention(nn.Module):
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.max_pool = nn.AdaptiveMaxPool2d(1)
 
-        self.fc1   = nn.Conv2d(channel, channel // 16, 1, bias=False)
-        self.fc2   = nn.Conv2d(channel // 16, channel, 1, bias=False)
+        self.fc1 = nn.Conv2d(channel, channel // 16, 1, bias=False)
+        self.fc2 = nn.Conv2d(channel // 16, channel, 1, bias=False)
 
         self.relu = nn.ReLU()
         self.sigmoid = nn.Sigmoid()

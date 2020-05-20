@@ -65,8 +65,7 @@ class Discriminator(nn.Module):
         self.conv3 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=2, padding=1, bias=False)
         self.conv4 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=2, padding=1, bias=False)
 
-        self.linear1 = nn.Linear(64 * 3, 128, bias=True)
-        self.linear2 = nn.Linear(128, 1, bias=True)
+        self.linear = nn.Linear(64 * 3, 1, bias=True)
 
         self.apply(weights_init)
 
@@ -128,7 +127,6 @@ class Discriminator(nn.Module):
         out = torch.cat((chord_output, onoff_output, out), dim=1)
         out = out.view(-1, 64 * 3)
 
-        out = self.relu(self.linear1(out))
-        logits = self.sigmoid(self.linear2(out))
+        logits = self.sigmoid(self.linear(out))
 
         return logits.view(-1)
