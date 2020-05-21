@@ -18,9 +18,7 @@ class Loss(nn.Module):
 class DLoss(nn.Module):
     def __init__(self):
         super().__init__()
+        self.loss = nn.BCELoss()
 
-    def forward(self, outputs, target=0):
-        if target == 1:
-            return torch.log(1. - outputs).mean()
-        else:
-            return torch.log(outputs).mean()
+    def forward(self, outputs, targets):
+        return self.loss(outputs, targets)
