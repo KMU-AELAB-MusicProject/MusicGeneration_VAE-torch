@@ -179,7 +179,9 @@ class BarGen(object):
         for epoch in range(self.config.epoch):
             self.epoch += 1
             self.train_epoch()
-            self.save_checkpoint(self.config.checkpoint_file, epoch)
+
+            if self.epoch > 100:
+                self.save_checkpoint(self.config.checkpoint_file, epoch)
 
     def train_epoch(self):
         tqdm_batch = tqdm(self.dataloader, total=self.dataset.num_iterations,
@@ -303,9 +305,9 @@ class BarGen(object):
 
         tqdm_batch.close()
 
-        self.summary_writer.add_image("epoch/sample image 1", image_sample[0].reshape(1, 96, 60), self.epoch)
-        self.summary_writer.add_image("epoch/sample image 2", image_sample[1].reshape(1, 96, 60), self.epoch)
-        self.summary_writer.add_image("epoch/sample image 3", image_sample[2].reshape(1, 96, 60), self.epoch)
+        self.summary_writer.add_image("generated bar/sample image 1", image_sample[0].reshape(1, 96, 60), self.epoch)
+        self.summary_writer.add_image("generated bar/sample image 2", image_sample[1].reshape(1, 96, 60), self.epoch)
+        self.summary_writer.add_image("generated bar/sample image 3", image_sample[2].reshape(1, 96, 60), self.epoch)
 
         self.scheduler_gen.step(avg_gen_loss.val)
         self.scheduler_discriminator.step(avg_disc_loss.val)
