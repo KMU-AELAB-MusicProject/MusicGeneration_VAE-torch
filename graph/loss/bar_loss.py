@@ -12,7 +12,7 @@ class Loss(nn.Module):
         out = torch.gt(logits, 0.35).type('torch.cuda.FloatTensor')
         additional_loss = (torch.gt(labels - out, 0.0001).type('torch.cuda.FloatTensor')).mean()
 
-        return (recon_loss + additional_loss * 0.8) + gan_loss
+        return (recon_loss + additional_loss) + gan_loss
 
 
 class DLoss(nn.Module):
