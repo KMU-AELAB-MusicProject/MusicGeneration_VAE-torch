@@ -15,6 +15,7 @@ class TimePitchModule(nn.Module):
                                         bias=False)
 
         self.bn = nn.BatchNorm2d(1024, eps=1e-5, momentum=0.01, affine=True)
+
         self.cbam = CBAM(1024)
 
         self.relu = nn.ReLU(inplace=True)
@@ -23,9 +24,13 @@ class TimePitchModule(nn.Module):
 
     def forward(self, x):
         out = self.time(x)
+        out = self.relu(out)
+
         out = self.pitch(out)
-        out = self.cbam(out)
         out = self.bn(out)
+
+        out = out + self.cbam(out)
+
         out = self.relu(out)
 
         return out
@@ -49,9 +54,13 @@ class PitchTimeModule(nn.Module):
 
     def forward(self, x):
         out = self.pitch(x)
+        out = self.relu(out)
+
         out = self.time(out)
         out = self.bn(out)
-        out = self.cbam(out)
+
+        out = out + self.cbam(out)
+
         out = self.relu(out)
 
         return out
@@ -92,7 +101,9 @@ class DeConvModule(nn.Module):
 
         out = self.conv(out)
         out = self.bn3(out)
-        out = self.cbam(out)
+
+        out = out + self.cbam(out)
+
         out = self.relu(out)
 
         return out
@@ -114,7 +125,8 @@ class DeConvPitchPadding(nn.Module):
         self.bn2 = nn.BatchNorm2d(out_channel, eps=1e-5, momentum=0.01, affine=True)
         self.bn3 = nn.BatchNorm2d(out_channel, eps=1e-5, momentum=0.01, affine=True)
 
-        self.cbam = CBAM(out_channel)
+        self.cbam1 = CBAM(out_channel)
+        self.cbam2 = CBAM(out_channel)
 
         self.relu = nn.ReLU(inplace=True)
 
@@ -122,7 +134,8 @@ class DeConvPitchPadding(nn.Module):
 
     def forward(self, x):
         out1 = self.deConv1(x)
-        out1 = self.bn1(out1)
+        out1 = self.bn2(out1)
+        out1 = out1 + self.cbam1(out1)
         out1 = self.relu(out1)
 
         out2 = self.deConv2(x)
@@ -133,7 +146,9 @@ class DeConvPitchPadding(nn.Module):
 
         out = self.conv(out)
         out = self.bn3(out)
-        out = self.cbam(out)
+
+        out = out + self.cbam2(out)
+
         out = self.relu(out)
 
         return out
@@ -150,7 +165,7 @@ class Decoder(nn.Module):
         self.time = TimePitchModule()
         self.pitch = PitchTimeModule()
 
-        self.fit = nn.Conv2d(in_channels=2048, out_channels=1024, kernel_size=1, stride=1, bias=False)
+        self.fit1 = nn.Conv2d(in_channels=2048, out_channels=1024, kernel_size=1, stride=1, bias=False)
         self.bn = nn.BatchNorm2d(1024, eps=1e-5, momentum=0.01, affine=True)
 
         self.fit2 = nn.Conv2d(in_channels=64, out_channels=1, kernel_size=1, stride=1, bias=False)
@@ -174,9 +189,11 @@ class Decoder(nn.Module):
 
         out = torch.cat((pitch, time), dim=1)
         
-        out = self.fit(out)
+        out = self.fit1(out)
         out = self.bn(out)
-        out = self.cbam(out)
+
+        out = out + self.cbam(out)
+
         out = self.relu(out)
         
         for layer in self.layers:

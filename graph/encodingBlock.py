@@ -24,9 +24,13 @@ class TimePitchModule(nn.Module):
 
     def forward(self, x):
         out = self.time(x)
+        out = self.leaky(out)
+
         out = self.pitch(out)
         out = self.bn(out)
-        out = self.cbam(out)
+
+        out = out + self.cbam(out)
+
         out = self.leaky(out)
 
         return out
@@ -51,9 +55,13 @@ class PitchTimeModule(nn.Module):
 
     def forward(self, x):
         out = self.pitch(x)
+        out = self.leaky(out)
+
         out = self.time(out)
         out = self.bn(out)
-        out = self.cbam(out)
+
+        out = out + self.cbam(out)
+
         out = self.leaky(out)
 
         return out
@@ -68,8 +76,7 @@ class ResidualModule(nn.Module):
         self.conv2 = nn.Conv2d(in_channels=channel, out_channels=channel, kernel_size=3, stride=1, padding=1,
                                bias=False)
 
-        self.bn1 = nn.BatchNorm2d(channel, eps=1e-5, momentum=0.01, affine=True)
-        self.bn2 = nn.BatchNorm2d(channel, eps=1e-5, momentum=0.01, affine=True)
+        self.bn = nn.BatchNorm2d(channel, eps=1e-5, momentum=0.01, affine=True)
 
         self.cbam = CBAM(channel)
 
@@ -79,11 +86,10 @@ class ResidualModule(nn.Module):
 
     def forward(self, x):
         out = self.conv1(x)
-        out = self.bn1(out)
         out = self.relu(out)
 
         out = self.conv2(out)
-        out = self.bn2(out)
+        out = self.bn(out)
 
         out = self.cbam(out)
 
@@ -112,7 +118,9 @@ class PoolingModule(nn.Module):
     def forward(self, x):
         out = self.conv(x)
         out = self.bn(out)
-        out = self.cbam(out)
+
+        out = out + self.cbam(out)
+
         out = self.relu(out)
 
         return out
