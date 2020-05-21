@@ -291,12 +291,12 @@ class BarGen(object):
 
                 avg_gen_loss.update(gen_loss.item())
 
-        tqdm_batch.close()
+            self.summary_writer.add_scalar("epoch/Generator_loss", avg_gen_loss.val, self.epoch)
+            self.summary_writer.add_scalar("epoch/Discriminator_loss", avg_disc_loss.val, self.epoch)
+            self.summary_writer.add_scalar("epoch/Bar_Z_Discriminator_loss", avg_barZ_disc_loss.val, self.epoch)
+            self.summary_writer.add_scalar("epoch/Phrase_Z_discriminator_loss", avg_phraseZ_disc_loss.val, self.epoch)
 
-        self.summary_writer.add_scalar("epoch/Generator_loss", avg_gen_loss.val, self.epoch)
-        self.summary_writer.add_scalar("epoch/Discriminator_loss", avg_disc_loss.val, self.epoch)
-        self.summary_writer.add_scalar("epoch/Bar_Z_Discriminator_loss", avg_barZ_disc_loss.val, self.epoch)
-        self.summary_writer.add_scalar("epoch/Phrase_Z_discriminator_loss", avg_phraseZ_disc_loss.val, self.epoch)
+        tqdm_batch.close()
 
         self.summary_writer.add_image("epoch/sample image 1", image_sample[0].reshape(1, 96, 60), self.epoch)
         self.summary_writer.add_image("epoch/sample image 2", image_sample[1].reshape(1, 96, 60), self.epoch)
