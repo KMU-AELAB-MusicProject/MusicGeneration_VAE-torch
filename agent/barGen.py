@@ -209,9 +209,9 @@ class BarGen(object):
             pre_phrase = Variable(pre_phrase)
             position = Variable(position)
 
-            valid_target = Variable(Tensor(note.size(0)).fill_(1.0), requires_grad=False)
-            fake_target = Variable(Tensor(note.size(0)).fill_(0.0), requires_grad=False)
-            fake_target_double = Variable(Tensor(note.size(0) * 2).fill_(0.0), requires_grad=False)
+            valid_target = Variable(Tensor(note.size(0), 1).fill_(1.0), requires_grad=False)
+            fake_target = Variable(Tensor(note.size(0), 1).fill_(0.0), requires_grad=False)
+            fake_target_double = Variable(Tensor(note.size(0) * 2, 1).fill_(0.0), requires_grad=False)
 
             ####################
             self.generator.zero_grad()
@@ -231,17 +231,17 @@ class BarGen(object):
 
                 #### Phrase Feature ###
                 phrase_fake = torch.randn(phrase_feature.size(0), phrase_feature.size(1)).cuda()
-                d_phrase_fake = self.z_discriminator_phrase(phrase_fake)
-                d_phrase_real = self.z_discriminator_phrase(phrase_feature)
+                d_phrase_fake = self.z_discriminator_phrase(phrase_fake).view(-1)
+                d_phrase_real = self.z_discriminator_phrase(phrase_feature).view(-1)
                 phraseZ_dics_loss = self.loss_disc(d_phrase_real, valid_target) + self.loss_disc(d_phrase_fake, fake_target)
 
                 #### Bar Feature ####
                 bar_fake = torch.randn(z.size(0) * 2, z.size(1)).cuda()
-                d_bar_fake = self.z_discriminator_bar(bar_fake)
-                d_bar_real1 = self.z_discriminator_bar(z)
-                d_bar_real2 = self.z_discriminator_bar(pre_z)
+                d_bar_fake = self.z_discriminator_bar(bar_fake).view(-1)
+                d_bar_real1 = self.z_discriminator_bar(z).view(-1)
+                d_bar_real2 = self.z_discriminator_bar(pre_z).view(-1)
                 barZ_dics_loss = self.loss_disc(d_bar_real1, valid_target) + self.loss_disc(d_bar_real2, valid_target) +\
-                                 self.loss_disc(d_bar_fake, fake_target_double)
+                                 self.loss_disc(d_bar_fake, fake_target)
 
                 #### Generated Bar ####
                 fake_note = torch.gt(gen_note, 0.35).type('torch.cuda.FloatTensor')
