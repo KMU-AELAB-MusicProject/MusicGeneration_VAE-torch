@@ -209,9 +209,9 @@ class BarGen(object):
             pre_phrase = Variable(pre_phrase)
             position = Variable(position)
 
-            valid_target = Variable(Tensor(note.size(0), 1).fill_(1.0), requires_grad=False)
-            fake_target = Variable(Tensor(note.size(0), 1).fill_(0.0), requires_grad=False)
-            fake_target_double = Variable(Tensor(note.size(0) * 2, 1).fill_(0.0), requires_grad=False)
+            valid_target = Variable(Tensor(note.size(0)).fill_(1.0), requires_grad=False)
+            fake_target = Variable(Tensor(note.size(0)).fill_(0.0), requires_grad=False)
+            fake_target_double = Variable(Tensor(note.size(0) * 2).fill_(0.0), requires_grad=False)
 
             ####################
             self.generator.zero_grad()
