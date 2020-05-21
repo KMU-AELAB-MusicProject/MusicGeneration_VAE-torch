@@ -241,7 +241,7 @@ class BarGen(object):
                 d_bar_real1 = self.z_discriminator_bar(z).view(-1)
                 d_bar_real2 = self.z_discriminator_bar(pre_z).view(-1)
                 barZ_dics_loss = self.loss_disc(d_bar_real1, valid_target) + self.loss_disc(d_bar_real2, valid_target) +\
-                                 self.loss_disc(d_bar_fake, fake_target)
+                                 self.loss_disc(d_bar_fake, fake_target_double)
 
                 #### Generated Bar ####
                 fake_note = torch.gt(gen_note, 0.35).type('torch.cuda.FloatTensor')
