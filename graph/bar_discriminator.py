@@ -187,7 +187,6 @@ class BarDiscriminator(nn.Module):
     def __init__(self):
         super(BarDiscriminator, self).__init__()
 
-        ###########################
         self.chord = ChordFeature()
         self.onoff = OnOffFeature()
         self.basic = BasicFeature([8, 16, 32, 64])

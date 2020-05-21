@@ -8,16 +8,16 @@ def weights_init(m):
         m.weight.data.normal_(0.0, 0.02)
 
         if m.bias is not None:
-            m.bias.data.zero_()
+            m.bias.data.normal_(-0.02, 0.02)
 
     elif classname.find('BatchNorm') != -1:
         m.weight.data.normal_(1.0, 0.02)
 
         if m.bias is not None:
-            m.bias.data.zero_()
+            m.bias.data.normal_(-0.02, 0.02)
 
     elif classname.find('Linear') != -1:
         m.weight.data.normal_(0.0, 0.02)
 
         if m.bias is not None:
-            m.bias.data.zero_()
+            m.bias.data.normal_(-0.02, 0.02)

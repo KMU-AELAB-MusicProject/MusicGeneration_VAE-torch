@@ -48,6 +48,7 @@ class PhraseModel(nn.Module):
         self.phrase_encoder = PhraseEncoder(layers)
 
         self.position_embedding = nn.Embedding(332, 1152)
+        nn.init.uniform_(self.position_embedding.weight, -1.0, 1.0)
 
         self.apply(weights_init)
 

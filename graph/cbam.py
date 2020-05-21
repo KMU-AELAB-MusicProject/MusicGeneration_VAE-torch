@@ -17,6 +17,8 @@ class ChannelAttention(nn.Module):
         self.relu = nn.ReLU()
         self.sigmoid = nn.Sigmoid()
 
+        self.apply(weights_init)
+
     def forward(self, x):
         avg_out = self.fc2(self.relu(self.fc1(self.avg_pool(x))))
         max_out = self.fc2(self.relu(self.fc1(self.max_pool(x))))
@@ -36,6 +38,8 @@ class SpatialAttention(nn.Module):
         self.sigmoid = nn.Sigmoid()
         self.relu = nn.ReLU(inplace=True)
 
+        self.apply(weights_init)
+
     def forward(self, x):
         avg_out = torch.mean(x, dim=1, keepdim=True)
         max_out, _ = torch.max(x, dim=1, keepdim=True)
@@ -53,6 +57,8 @@ class CBAM(nn.Module):
 
         self.channel_attention = ChannelAttention(channel)
         self.spatial_attention = SpatialAttention()
+
+        self.apply(weights_init)
 
     def forward(self, x):
         out = self.channel_attention(x)

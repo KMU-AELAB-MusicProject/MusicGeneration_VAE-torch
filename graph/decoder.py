@@ -19,6 +19,8 @@ class TimePitchModule(nn.Module):
 
         self.relu = nn.ReLU(inplace=True)
 
+        self.apply(weights_init)
+
     def forward(self, x):
         out = self.time(x)
         out = self.pitch(out)
@@ -42,6 +44,8 @@ class PitchTimeModule(nn.Module):
         self.cbam = CBAM(1024)
 
         self.relu = nn.ReLU(inplace=True)
+
+        self.apply(weights_init)
 
     def forward(self, x):
         out = self.pitch(x)
@@ -72,6 +76,8 @@ class DeConvModule(nn.Module):
         self.cbam = CBAM(out_channel)
 
         self.relu = nn.ReLU(inplace=True)
+
+        self.apply(weights_init)
 
     def forward(self, x):
         out1 = self.deConv1(x)
@@ -111,6 +117,8 @@ class DeConvPitchPadding(nn.Module):
         self.cbam = CBAM(out_channel)
 
         self.relu = nn.ReLU(inplace=True)
+
+        self.apply(weights_init)
 
     def forward(self, x):
         out1 = self.deConv1(x)
