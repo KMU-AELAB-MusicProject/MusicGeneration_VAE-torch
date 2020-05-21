@@ -211,6 +211,7 @@ class BarGen(object):
 
             valid_target = Variable(Tensor(note.size(0), 1).fill_(1.0), requires_grad=False)
             fake_target = Variable(Tensor(note.size(0), 1).fill_(0.0), requires_grad=False)
+            fake_target_double = Variable(Tensor(note.size(0) * 2, 1).fill_(0.0), requires_grad=False)
 
             ####################
             self.generator.zero_grad()
@@ -240,7 +241,7 @@ class BarGen(object):
                 d_bar_real1 = self.z_discriminator_bar(z)
                 d_bar_real2 = self.z_discriminator_bar(pre_z)
                 barZ_dics_loss = self.loss_disc(d_bar_real1, valid_target) + self.loss_disc(d_bar_real2, valid_target) +\
-                                 self.loss_disc(d_bar_fake, fake_target)
+                                 self.loss_disc(d_bar_fake, fake_target_double)
 
                 #### Generated Bar ####
                 fake_note = torch.gt(gen_note, 0.35).type('torch.cuda.FloatTensor')
