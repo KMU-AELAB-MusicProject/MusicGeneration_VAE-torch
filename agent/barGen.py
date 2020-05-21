@@ -278,10 +278,9 @@ class BarGen(object):
                 image_sample = gen_note
 
                 #### GAN Loss ###
-                gan_loss = self.loss_disc(self.z_discriminator_phrase(phrase_feature), valid_target)
-
-                gan_loss += self.loss_disc(self.z_discriminator_bar(z), valid_target) + \
-                            self.loss_disc(self.z_discriminator_bar(pre_z), valid_target)
+                gan_loss = self.loss_disc(self.z_discriminator_phrase(phrase_feature).view(-1), valid_target)
+                gan_loss += self.loss_disc(self.z_discriminator_bar(z).view(-1), valid_target) + \
+                            self.loss_disc(self.z_discriminator_bar(pre_z).view(-1), valid_target)
 
                 fake_note = torch.gt(gen_note, 0.35).type('torch.cuda.FloatTensor')
                 fake_note = torch.cat((pre_note, fake_note), dim=2)
