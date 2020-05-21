@@ -299,9 +299,11 @@ class BarGen(object):
                 avg_gen_loss.update(gen_loss.item())
 
             self.summary_writer.add_scalar("epoch/Generator_loss", avg_gen_loss.val, self.epoch)
-            self.summary_writer.add_scalar("epoch/Discriminator_loss", avg_disc_loss.val, self.epoch)
-            self.summary_writer.add_scalar("epoch/Bar_Z_Discriminator_loss", avg_barZ_disc_loss.val, self.epoch)
-            self.summary_writer.add_scalar("epoch/Phrase_Z_discriminator_loss", avg_phraseZ_disc_loss.val, self.epoch)
+
+            if self.epoch > 100:
+                self.summary_writer.add_scalar("epoch/Discriminator_loss", avg_disc_loss.val, self.epoch)
+                self.summary_writer.add_scalar("epoch/Bar_Z_Discriminator_loss", avg_barZ_disc_loss.val, self.epoch)
+                self.summary_writer.add_scalar("epoch/Phrase_Z_discriminator_loss", avg_phraseZ_disc_loss.val, self.epoch)
 
         tqdm_batch.close()
 
