@@ -219,7 +219,7 @@ class BarGen(object):
             self.z_discriminator_bar.zero_grad()
             self.z_discriminator_phrase.zero_grad()
 
-            if (curr_it + self.epoch) % 2:
+            if (curr_it + self.epoch) % 3 == 0 and self.epoch > 100:
                 #################### Discriminator ####################
                 self.free(self.discriminator)
                 self.free(self.z_discriminator_bar)
