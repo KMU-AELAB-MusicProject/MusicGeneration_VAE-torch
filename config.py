@@ -1,6 +1,6 @@
 class Config(object):
     epoch = 5000
-    batch_size = 2
+    batch_size = 3
     learning_rate = 0.001
 
     cuda = True

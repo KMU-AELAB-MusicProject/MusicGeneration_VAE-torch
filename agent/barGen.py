@@ -73,8 +73,7 @@ class BarGen(object):
                                                                                           cooldown=5)
 
         # initialize counter
-        self.vae_iteration = 0
-        self.gan_iteration = 0
+        self.iteration = 0
         self.epoch = 0
 
         self.manual_seed = random.randint(1, 10000)
@@ -215,6 +214,8 @@ class BarGen(object):
             fake_target = Variable(Tensor(note.size(0)).fill_(0.0), requires_grad=False)
             fake_target_double = Variable(Tensor(note.size(0) * 2).fill_(0.0), requires_grad=False)
 
+            self.iteration += 1
+
             ####################
             self.generator.zero_grad()
             self.discriminator.zero_grad()
@@ -298,12 +299,12 @@ class BarGen(object):
 
                 avg_gen_loss.update(gen_loss.item())
 
-            self.summary_writer.add_scalar("epoch/Generator_loss", avg_gen_loss.val, self.epoch)
+            self.summary_writer.add_scalar("epoch/Generator_loss", avg_gen_loss.val, self.iteration)
 
             if self.epoch > 100:
-                self.summary_writer.add_scalar("epoch/Discriminator_loss", avg_disc_loss.val, self.epoch)
-                self.summary_writer.add_scalar("epoch/Bar_Z_Discriminator_loss", avg_barZ_disc_loss.val, self.epoch)
-                self.summary_writer.add_scalar("epoch/Phrase_Z_discriminator_loss", avg_phraseZ_disc_loss.val, self.epoch)
+                self.summary_writer.add_scalar("epoch/Discriminator_loss", avg_disc_loss.val, self.iteration)
+                self.summary_writer.add_scalar("epoch/Bar_Z_Discriminator_loss", avg_barZ_disc_loss.val, self.iteration)
+                self.summary_writer.add_scalar("epoch/Phrase_Z_discriminator_loss", avg_phraseZ_disc_loss.val, self.iteration)
 
         tqdm_batch.close()
 
