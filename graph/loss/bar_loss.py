@@ -7,12 +7,12 @@ class Loss(nn.Module):
         super().__init__()
         self.loss = nn.BCELoss()
 
-    def forward(self, logits, labels, gan_loss):
+    def forward(self, logits, labels):
         recon_loss = self.loss(logits, labels)
         out = torch.gt(logits, 0.35).type('torch.cuda.FloatTensor')
         additional_loss = (torch.gt(labels - out, 0.0001).type('torch.cuda.FloatTensor')).sum()
 
-        return (recon_loss + additional_loss * 0.001) + gan_loss
+        return recon_loss + additional_loss * 0.001
 
 
 class DLoss(nn.Module):

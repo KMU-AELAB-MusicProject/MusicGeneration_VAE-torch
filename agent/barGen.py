@@ -280,18 +280,19 @@ class BarGen(object):
                 gen_note, z, pre_z, phrase_feature = self.generator(note, pre_note, pre_phrase, position)
                 image_sample = gen_note
 
-                #### GAN Loss ###
-                gan_loss = self.loss_disc(self.z_discriminator_phrase(phrase_feature).view(-1), valid_target)
-                gan_loss += self.loss_disc(self.z_discriminator_bar(z).view(-1), valid_target) + \
-                            self.loss_disc(self.z_discriminator_bar(pre_z).view(-1), valid_target)
+                gen_loss = self.loss_gen(gen_note, note)
 
-                fake_note = torch.gt(gen_note, 0.35).type('torch.cuda.FloatTensor')
-                fake_note = torch.cat((pre_note, fake_note), dim=2)
-                d_fake = self.discriminator(fake_note).view(-1)
+                #### add GAN Loss ###
+                if self.epoch > 100:
+                    gen_loss = self.loss_disc(self.z_discriminator_phrase(phrase_feature).view(-1), valid_target)
+                    gen_loss += self.loss_disc(self.z_discriminator_bar(z).view(-1), valid_target) + \
+                                self.loss_disc(self.z_discriminator_bar(pre_z).view(-1), valid_target)
 
-                gan_loss += self.loss_disc(d_fake, valid_target)
+                    fake_note = torch.gt(gen_note, 0.35).type('torch.cuda.FloatTensor')
+                    fake_note = torch.cat((pre_note, fake_note), dim=2)
+                    d_fake = self.discriminator(fake_note).view(-1)
 
-                gen_loss = self.loss_gen(gen_note, note, gan_loss)
+                    gen_loss += self.loss_disc(d_fake, valid_target)
 
                 gen_loss.backward()
 
