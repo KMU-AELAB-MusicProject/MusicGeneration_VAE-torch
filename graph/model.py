@@ -33,7 +33,7 @@ class Model(nn.Module):
         else:
             phrase_feature = self.phrase_encoder(phrase, position)
 
-            pre_z, pre_mean, pre_var = self.encoder(pre_note)
+            pre_z = self.encoder(pre_note)
             bar_feature = note + pre_z
 
             feature = torch.cat((bar_feature, phrase_feature), dim=1)

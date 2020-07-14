@@ -1,4 +1,5 @@
 import os
+import random
 import numpy as np
 
 from tqdm import tqdm
@@ -33,7 +34,7 @@ class BarGen(object):
 
         # define dataloader
         self.dataset = NoteDataset(self.config.root_path, self.config)
-        self.dataloader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=False, num_workers=3,
+        self.dataloader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=False, num_workers=1,
                                      pin_memory=self.config.pin_memory, collate_fn=self.make_batch)
 
         # define models ( generator and discriminator)
@@ -74,7 +75,7 @@ class BarGen(object):
 
         # initialize counter
         self.iteration = 0
-        self.epoch = 0
+        self.epoch = 112
 
         self.manual_seed = random.randint(1, 10000)
 
@@ -161,6 +162,10 @@ class BarGen(object):
             'opt_Zdiscriminator_bar_optimizer': self.opt_Zdiscriminator_bar.state_dict(),
             'z_discriminator_phrase_state_dict': self.z_discriminator_phrase.state_dict(),
             'opt_Zdiscriminator_phrase_optimizer': self.opt_Zdiscriminator_phrase.state_dict(),
+            'lr_gen': self.config.learning_rate,
+            'lr_discriminator': self.config.learning_rate,
+            'lr_Zdiscriminator_bar': self.config.learning_rate,
+            'lr_Zdiscriminator_phrase': self.config.learning_rate,
         }
 
         torch.save(state, tmp_name)
@@ -179,8 +184,8 @@ class BarGen(object):
             self.epoch += 1
             self.train_epoch()
 
-            if self.epoch > 100:
-                self.save_checkpoint(self.config.checkpoint_file, epoch)
+            if self.epoch > 220:
+                self.save_checkpoint(self.config.checkpoint_file, self.epoch)
 
     def train_epoch(self):
         tqdm_batch = tqdm(self.dataloader, total=self.dataset.num_iterations,
@@ -198,7 +203,7 @@ class BarGen(object):
         avg_disc_loss = AverageMeter()
         avg_barZ_disc_loss = AverageMeter()
         avg_phraseZ_disc_loss = AverageMeter()
-
+        div_flag = random.randrange(2, 5)
         for curr_it, (note, pre_note, pre_phrase, position) in enumerate(tqdm_batch):
             note = note.cuda(async=self.config.async_loading)
             pre_note = pre_note.cuda(async=self.config.async_loading)
@@ -222,7 +227,7 @@ class BarGen(object):
             self.z_discriminator_bar.zero_grad()
             self.z_discriminator_phrase.zero_grad()
 
-            if (curr_it + self.epoch) % 3 == 0 and self.epoch > 100:
+            if (curr_it + self.epoch) % div_flag == 1 and self.epoch > 150:
                 #################### Discriminator ####################
                 self.free(self.discriminator)
                 self.free(self.z_discriminator_bar)
@@ -269,49 +274,60 @@ class BarGen(object):
                 avg_barZ_disc_loss.update(barZ_dics_loss)
                 avg_phraseZ_disc_loss.update(phraseZ_dics_loss)
 
-            else:
-                #################### Generator ####################
-                self.free(self.generator)
+            #else:
+            #################### Generator ####################
+            self.free(self.generator)
 
-                self.frozen(self.discriminator)
-                self.frozen(self.z_discriminator_bar)
-                self.frozen(self.z_discriminator_phrase)
+            self.frozen(self.discriminator)
+            self.frozen(self.z_discriminator_bar)
+            self.frozen(self.z_discriminator_phrase)
 
-                gen_note, z, pre_z, phrase_feature = self.generator(note, pre_note, pre_phrase, position)
-                image_sample = gen_note
+            gen_note, z, pre_z, phrase_feature = self.generator(note, pre_note, pre_phrase, position)
+            image_sample = gen_note
+            origin_image = note
 
-                gen_loss = self.loss_gen(gen_note, note)
+            gen_loss = self.loss_gen(gen_note, note)
 
-                #### add GAN Loss ###
-                if self.epoch > 100:
-                    gen_loss = self.loss_disc(self.z_discriminator_phrase(phrase_feature).view(-1), valid_target)
-                    gen_loss += self.loss_disc(self.z_discriminator_bar(z).view(-1), valid_target) + \
-                                self.loss_disc(self.z_discriminator_bar(pre_z).view(-1), valid_target)
+            #### add GAN Loss ###
+            if self.epoch > 150:
+                gen_loss = self.loss_disc(self.z_discriminator_phrase(phrase_feature).view(-1), valid_target)
+                gen_loss += self.loss_disc(self.z_discriminator_bar(z).view(-1), valid_target) + \
+                            self.loss_disc(self.z_discriminator_bar(pre_z).view(-1), valid_target)
 
-                    fake_note = torch.gt(gen_note, 0.35).type('torch.cuda.FloatTensor')
-                    fake_note = torch.cat((pre_note, fake_note), dim=2)
-                    d_fake = self.discriminator(fake_note).view(-1)
+                fake_note = torch.gt(gen_note, 0.35).type('torch.cuda.FloatTensor')
+                fake_note = torch.cat((pre_note, fake_note), dim=2)
+                d_fake = self.discriminator(fake_note).view(-1)
 
-                    gen_loss += self.loss_disc(d_fake, valid_target)
+                gen_loss += self.loss_disc(d_fake, valid_target)
 
-                gen_loss.backward()
+            gen_loss.backward()
 
-                self.opt_gen.step()
+            self.opt_gen.step()
 
-                avg_gen_loss.update(gen_loss.item())
+            avg_gen_loss.update(gen_loss.item())
 
             self.summary_writer.add_scalar("epoch/Generator_loss", avg_gen_loss.val, self.iteration)
 
-            if self.epoch > 100:
+            if self.epoch > 150:
                 self.summary_writer.add_scalar("epoch/Discriminator_loss", avg_disc_loss.val, self.iteration)
                 self.summary_writer.add_scalar("epoch/Bar_Z_Discriminator_loss", avg_barZ_disc_loss.val, self.iteration)
                 self.summary_writer.add_scalar("epoch/Phrase_Z_discriminator_loss", avg_phraseZ_disc_loss.val, self.iteration)
 
         tqdm_batch.close()
 
-        self.summary_writer.add_image("generated bar/sample image 1", image_sample[0].reshape(1, 96, 60), self.epoch)
-        self.summary_writer.add_image("generated bar/sample image 2", image_sample[1].reshape(1, 96, 60), self.epoch)
-        self.summary_writer.add_image("generated bar/sample image 3", image_sample[2].reshape(1, 96, 60), self.epoch)
+        self.summary_writer.add_image("generated/sample 1_1", image_sample[0].reshape(1, 96, 60), self.epoch)
+        self.summary_writer.add_image("generated/sample 1_2", image_sample[1].reshape(1, 96, 60), self.epoch)
+        self.summary_writer.add_image("generated/sample 1_3", image_sample[2].reshape(1, 96, 60), self.epoch)
+        
+        image_sample = torch.gt(image_sample, 0.35).type('torch.cuda.FloatTensor')
+        
+        self.summary_writer.add_image("generated/sample 2_1", image_sample[0].reshape(1, 96, 60), self.epoch)
+        self.summary_writer.add_image("generated/sample 2_2", image_sample[1].reshape(1, 96, 60), self.epoch)
+        self.summary_writer.add_image("generated/sample 2_3", image_sample[2].reshape(1, 96, 60), self.epoch)
+        
+        self.summary_writer.add_image("generated/origin 2_1", origin_image[0].reshape(1, 96, 60), self.epoch)
+        self.summary_writer.add_image("generated/origin 2_2", origin_image[1].reshape(1, 96, 60), self.epoch)
+        self.summary_writer.add_image("generated/origin 2_3", origin_image[2].reshape(1, 96, 60), self.epoch)
 
         self.scheduler_gen.step(avg_gen_loss.val)
         self.scheduler_discriminator.step(avg_disc_loss.val)
