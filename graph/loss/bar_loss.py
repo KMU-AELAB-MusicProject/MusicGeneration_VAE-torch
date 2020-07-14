@@ -17,8 +17,8 @@ class Loss(nn.Module):
              0.00103728, 0.00112497, 0.00071164, 0.00052543, 0.00072274, 0.00038808]) * 0.05
 
         self.loss = nn.BCELoss()
-        self.distribution_smoothing = torch.from_numpy(distribution)
-        self.default_smoothing = 0.1 / 60
+        self.distribution_smoothing = torch.from_numpy(distribution).cuda()
+        self.default_smoothing = torch.Tensor(0.1 / 60).cuda()
 
     def forward(self, logits, labels):
         labels = (labels * 0.85) + self.default_smoothing + self.distribution_smoothing
