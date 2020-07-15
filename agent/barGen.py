@@ -54,7 +54,8 @@ class BarGen(object):
         self.lr_Zdiscriminator_phrase = self.config.learning_rate
 
         # define optimizer
-        self.opt_gen = torch.optim.Adam(self.generator.parameters(), lr=self.lr_gen)
+        self.opt_gen1 = torch.optim.Adam(self.generator.parameters(), lr=self.lr_gen)
+        self.opt_gen2 = torch.optim.Adam(self.generator.parameters(), lr=self.lr_gen)
         self.opt_discriminator = torch.optim.Adam(self.discriminator.parameters(), lr=self.lr_discriminator)
         self.opt_Zdiscriminator_bar = torch.optim.Adam(self.z_discriminator_bar.parameters(),
                                                        lr=self.lr_Zdiscriminator_bar)
@@ -62,20 +63,22 @@ class BarGen(object):
                                                           lr=self.lr_Zdiscriminator_phrase)
 
         # define optimize scheduler
-        self.scheduler_gen = torch.optim.lr_scheduler.ReduceLROnPlateau(self.opt_gen, mode='min', factor=0.8,
-                                                                        cooldown=5)
+        self.scheduler_gen1 = torch.optim.lr_scheduler.ReduceLROnPlateau(self.opt_gen1, mode='min', factor=0.8,
+                                                                        cooldown=6)
+        self.scheduler_gen2 = torch.optim.lr_scheduler.ReduceLROnPlateau(self.opt_gen2, mode='min', factor=0.8,
+                                                                        cooldown=6)
         self.scheduler_discriminator = torch.optim.lr_scheduler.ReduceLROnPlateau(self.opt_discriminator, mode='min',
-                                                                                  factor=0.8, cooldown=5)
+                                                                                  factor=0.8, cooldown=6)
         self.scheduler_Zdiscriminator_bar = torch.optim.lr_scheduler.ReduceLROnPlateau(self.opt_Zdiscriminator_bar,
                                                                                        mode='min', factor=0.8,
-                                                                                       cooldown=5)
+                                                                                       cooldown=6)
         self.scheduler_Zdiscriminator_phrase = torch.optim.lr_scheduler.ReduceLROnPlateau(self.opt_Zdiscriminator_phrase,
                                                                                           mode='min', factor=0.8,
-                                                                                          cooldown=5)
+                                                                                          cooldown=6)
 
         # initialize counter
         self.iteration = 0
-        self.epoch = 112
+        self.epoch = 90
 
         self.manual_seed = random.randint(1, 10000)
 
@@ -133,7 +136,8 @@ class BarGen(object):
             checkpoint = torch.load(filename)
 
             self.generator.load_state_dict(checkpoint['generator_state_dict'])
-            self.opt_gen.load_state_dict(checkpoint['gen_optimizer'])
+            self.opt_gen1.load_state_dict(checkpoint['gen_optimizer1'])
+            self.opt_gen2.load_state_dict(checkpoint['gen_optimizer2'])
 
             self.discriminator.load_state_dict(checkpoint['discriminator_state_dict'])
             self.opt_discriminator.load_state_dict(checkpoint['disc_optimizer'])
@@ -155,7 +159,8 @@ class BarGen(object):
         state = {
             'epoch': self.epoch,
             'generator_state_dict': self.generator.state_dict(),
-            'gen_optimizer': self.opt_gen.state_dict(),
+            'gen_optimizer1': self.opt_gen1.state_dict(),
+            'gen_optimizer2': self.opt_gen2.state_dict(),
             'discriminator_state_dict': self.discriminator.state_dict(),
             'disc_optimizer': self.opt_discriminator.state_dict(),
             'z_discriminator_bar_state_dict': self.z_discriminator_bar.state_dict(),
@@ -300,36 +305,43 @@ class BarGen(object):
 
                 gen_loss += self.loss_disc(d_fake, valid_target)
 
-            gen_loss.backward()
+                gen_loss.backward()
+                self.opt_gen2.step()
 
-            self.opt_gen.step()
+            else:
+                gen_loss.backward()
+                self.opt_gen1.step()
 
             avg_gen_loss.update(gen_loss.item())
 
-            self.summary_writer.add_scalar("epoch/Generator_loss", avg_gen_loss.val, self.iteration)
-
             if self.epoch > 150:
-                self.summary_writer.add_scalar("epoch/Discriminator_loss", avg_disc_loss.val, self.iteration)
-                self.summary_writer.add_scalar("epoch/Bar_Z_Discriminator_loss", avg_barZ_disc_loss.val, self.iteration)
-                self.summary_writer.add_scalar("epoch/Phrase_Z_discriminator_loss", avg_phraseZ_disc_loss.val, self.iteration)
+                self.summary_writer.add_scalar("train/Generator_loss", avg_gen_loss.val, self.iteration)
+                self.summary_writer.add_scalar("train/Discriminator_loss", avg_disc_loss.val, self.iteration)
+                self.summary_writer.add_scalar("train/Bar_Z_Discriminator_loss", avg_barZ_disc_loss.val, self.iteration)
+                self.summary_writer.add_scalar("train/Phrase_Z_discriminator_loss", avg_phraseZ_disc_loss.val, self.iteration)
+            else:
+                self.summary_writer.add_scalar("pre_train/Generator_loss", avg_gen_loss.val, self.iteration)
 
         tqdm_batch.close()
 
         self.summary_writer.add_image("generated/sample 1_1", image_sample[0].reshape(1, 96, 60), self.epoch)
         self.summary_writer.add_image("generated/sample 1_2", image_sample[1].reshape(1, 96, 60), self.epoch)
         self.summary_writer.add_image("generated/sample 1_3", image_sample[2].reshape(1, 96, 60), self.epoch)
-        
+
         image_sample = torch.gt(image_sample, 0.35).type('torch.cuda.FloatTensor')
-        
+
         self.summary_writer.add_image("generated/sample 2_1", image_sample[0].reshape(1, 96, 60), self.epoch)
         self.summary_writer.add_image("generated/sample 2_2", image_sample[1].reshape(1, 96, 60), self.epoch)
         self.summary_writer.add_image("generated/sample 2_3", image_sample[2].reshape(1, 96, 60), self.epoch)
-        
+
         self.summary_writer.add_image("generated/origin 2_1", origin_image[0].reshape(1, 96, 60), self.epoch)
         self.summary_writer.add_image("generated/origin 2_2", origin_image[1].reshape(1, 96, 60), self.epoch)
         self.summary_writer.add_image("generated/origin 2_3", origin_image[2].reshape(1, 96, 60), self.epoch)
 
-        self.scheduler_gen.step(avg_gen_loss.val)
+        if self.epoch > 150:
+            self.scheduler_gen1.step(avg_gen_loss.val)
+        else:
+            self.scheduler_gen2.step(avg_gen_loss.val)
         self.scheduler_discriminator.step(avg_disc_loss.val)
         self.scheduler_Zdiscriminator_bar.step(avg_barZ_disc_loss.val)
         self.scheduler_Zdiscriminator_phrase.step(avg_phraseZ_disc_loss.val)
