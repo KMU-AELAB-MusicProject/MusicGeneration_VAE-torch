@@ -30,7 +30,7 @@ class BarGen(object):
     def __init__(self, config):
         self.config = config
 
-        self.pretraing_step_size = self.config.pretraing_step_size
+        self.pretraining_step_size = self.config.pretraining_step_size
         self.batch_size = self.config.batch_size
         
         self.logger = self.set_logger()
@@ -208,7 +208,7 @@ class BarGen(object):
             self.epoch += 1
             self.train_epoch()
 
-            if self.epoch > self.pretraing_step_size + 50:
+            if self.epoch > self.pretraining_step_size + 50:
                 self.save_checkpoint(self.config.checkpoint_file, self.epoch)
 
     def train_epoch(self):
@@ -251,7 +251,7 @@ class BarGen(object):
             self.z_discriminator_bar.zero_grad()
             self.z_discriminator_phrase.zero_grad()
 
-            if (curr_it + self.epoch) % div_flag == 1 and self.epoch > self.pretraing_step_size:
+            if (curr_it + self.epoch) % div_flag == 1 and self.epoch > self.pretraining_step_size:
                 #################### Discriminator ####################
                 self.free(self.discriminator)
                 self.free(self.z_discriminator_bar)
@@ -310,7 +310,7 @@ class BarGen(object):
             origin_image = note
 
             #### add GAN Loss ###
-            if self.epoch > self.pretraing_step_size:
+            if self.epoch > self.pretraining_step_size:
                 gen_loss = self.loss_gen(gen_note, note, False)
                 
                 gen_loss = self.loss_disc(self.z_discriminator_phrase(phrase_feature).view(-1), valid_target)
@@ -334,7 +334,7 @@ class BarGen(object):
 
             avg_gen_loss.update(gen_loss.item())
 
-            if self.epoch > self.pretraing_step_size:
+            if self.epoch > self.pretraining_step_size:
                 self.summary_writer.add_scalar("train/Generator_loss", avg_gen_loss.val, self.iteration)
                 self.summary_writer.add_scalar("train/Discriminator_loss", avg_disc_loss.val, self.iteration)
                 self.summary_writer.add_scalar("train/Bar_Z_Discriminator_loss", avg_barZ_disc_loss.val, self.iteration)
@@ -358,7 +358,7 @@ class BarGen(object):
         self.summary_writer.add_image("generated/origin 2_2", origin_image[1].reshape(1, 96, 60), self.epoch)
         self.summary_writer.add_image("generated/origin 2_3", origin_image[2].reshape(1, 96, 60), self.epoch)
 
-        if self.epoch > self.pretraing_step_size:
+        if self.epoch > self.pretraining_step_size:
             self.scheduler_gen1.step(avg_gen_loss.val)
         else:
             self.scheduler_gen2.step(avg_gen_loss.val)
