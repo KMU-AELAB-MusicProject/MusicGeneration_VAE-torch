@@ -30,7 +30,10 @@ class BarGen(object):
     def __init__(self, config):
         self.config = config
 
+        self.pretraing_step_size = self.config.pretraing_step_size
         self.batch_size = self.config.batch_size
+        
+        self.logger = self.set_logger()
 
         # define dataloader
         self.dataset = NoteDataset(self.config.root_path, self.config)
@@ -48,14 +51,15 @@ class BarGen(object):
         self.loss_disc = DLoss().cuda()
 
         # define lr
-        self.lr_gen = self.config.learning_rate
+        self.lr_gen1 = self.config.learning_rate
+        self.lr_gen2 = self.config.learning_rate
         self.lr_discriminator = self.config.learning_rate
         self.lr_Zdiscriminator_bar = self.config.learning_rate
         self.lr_Zdiscriminator_phrase = self.config.learning_rate
 
         # define optimizer
-        self.opt_gen1 = torch.optim.Adam(self.generator.parameters(), lr=self.lr_gen)
-        self.opt_gen2 = torch.optim.Adam(self.generator.parameters(), lr=self.lr_gen)
+        self.opt_gen1 = torch.optim.Adam(self.generator.parameters(), lr=self.lr_gen1)
+        self.opt_gen2 = torch.optim.Adam(self.generator.parameters(), lr=self.lr_gen2)
         self.opt_discriminator = torch.optim.Adam(self.discriminator.parameters(), lr=self.lr_discriminator)
         self.opt_Zdiscriminator_bar = torch.optim.Adam(self.z_discriminator_bar.parameters(),
                                                        lr=self.lr_Zdiscriminator_bar)
@@ -78,7 +82,7 @@ class BarGen(object):
 
         # initialize counter
         self.iteration = 0
-        self.epoch = 90
+        self.epoch = 0
 
         self.manual_seed = random.randint(1, 10000)
 
@@ -111,6 +115,21 @@ class BarGen(object):
         print('Number of discriminator parameters: {}'.format(sum([p.data.nelement() for p in self.discriminator.parameters()])))
         print('Number of barZ discriminator parameters: {}'.format(sum([p.data.nelement() for p in self.z_discriminator_bar.parameters()])))
         print('Number of phraseZ discriminator parameters: {}'.format(sum([p.data.nelement() for p in self.z_discriminator_phrase.parameters()])))
+        
+    def set_logger(self):
+        logger = logging.getLogger()
+        logger.setLevel(logging.DEBUG)
+        
+        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        file_handler = logging.FileHandler(filename="train_epoch.log")
+    
+        file_handler.setLevel(logging.DEBUG)
+
+        file_handler.setFormatter(formatter)
+
+        logger.addHandler(file_handler)
+        
+        return logger
 
     def make_batch(self, samples):
         note = np.concatenate([sample['note'] for sample in samples], axis=0)
@@ -189,7 +208,7 @@ class BarGen(object):
             self.epoch += 1
             self.train_epoch()
 
-            if self.epoch > 220:
+            if self.epoch > self.pretraing_step_size + 50:
                 self.save_checkpoint(self.config.checkpoint_file, self.epoch)
 
     def train_epoch(self):
@@ -232,7 +251,7 @@ class BarGen(object):
             self.z_discriminator_bar.zero_grad()
             self.z_discriminator_phrase.zero_grad()
 
-            if (curr_it + self.epoch) % div_flag == 1 and self.epoch > 150:
+            if (curr_it + self.epoch) % div_flag == 1 and self.epoch > self.pretraing_step_size:
                 #################### Discriminator ####################
                 self.free(self.discriminator)
                 self.free(self.z_discriminator_bar)
@@ -279,7 +298,6 @@ class BarGen(object):
                 avg_barZ_disc_loss.update(barZ_dics_loss)
                 avg_phraseZ_disc_loss.update(phraseZ_dics_loss)
 
-            #else:
             #################### Generator ####################
             self.free(self.generator)
 
@@ -291,10 +309,10 @@ class BarGen(object):
             image_sample = gen_note
             origin_image = note
 
-            gen_loss = self.loss_gen(gen_note, note)
-
             #### add GAN Loss ###
-            if self.epoch > 150:
+            if self.epoch > self.pretraing_step_size:
+                gen_loss = self.loss_gen(gen_note, note, False)
+                
                 gen_loss = self.loss_disc(self.z_discriminator_phrase(phrase_feature).view(-1), valid_target)
                 gen_loss += self.loss_disc(self.z_discriminator_bar(z).view(-1), valid_target) + \
                             self.loss_disc(self.z_discriminator_bar(pre_z).view(-1), valid_target)
@@ -309,12 +327,14 @@ class BarGen(object):
                 self.opt_gen2.step()
 
             else:
+                gen_loss = self.loss_gen(gen_note, note, True)
+                
                 gen_loss.backward()
                 self.opt_gen1.step()
 
             avg_gen_loss.update(gen_loss.item())
 
-            if self.epoch > 150:
+            if self.epoch > self.pretraing_step_size:
                 self.summary_writer.add_scalar("train/Generator_loss", avg_gen_loss.val, self.iteration)
                 self.summary_writer.add_scalar("train/Discriminator_loss", avg_disc_loss.val, self.iteration)
                 self.summary_writer.add_scalar("train/Bar_Z_Discriminator_loss", avg_barZ_disc_loss.val, self.iteration)
@@ -338,10 +358,13 @@ class BarGen(object):
         self.summary_writer.add_image("generated/origin 2_2", origin_image[1].reshape(1, 96, 60), self.epoch)
         self.summary_writer.add_image("generated/origin 2_3", origin_image[2].reshape(1, 96, 60), self.epoch)
 
-        if self.epoch > 150:
+        if self.epoch > self.pretraing_step_size:
             self.scheduler_gen1.step(avg_gen_loss.val)
         else:
             self.scheduler_gen2.step(avg_gen_loss.val)
         self.scheduler_discriminator.step(avg_disc_loss.val)
         self.scheduler_Zdiscriminator_bar.step(avg_barZ_disc_loss.val)
         self.scheduler_Zdiscriminator_phrase.step(avg_phraseZ_disc_loss.val)
+
+        self.logger.debug('pre_train lr: {},  generator lr: {},  bar disc lr: {},  barZ disc lr: {},  phraseZ disc lr: {}'.format(self.lr_gen1, self.lr_gen2, self.lr_discriminator,
+                                                                                                                                  self.lr_Zdiscriminator_bar, self.lr_Zdiscriminator_phrase))
