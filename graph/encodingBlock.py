@@ -14,7 +14,7 @@ class TimePitchModule(nn.Module):
         self.pitch = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=(1, 4), stride=(1, 2), padding=[0, 1],
                                bias=False)
 
-        self.bn = nn.BatchNorm2d(32, eps=1e-5, momentum=0.01, affine=True)
+        self.bn = nn.InstanceNorm2d(32, eps=1e-5, momentum=0.01, affine=True)
 
         self.cbam = CBAM(32)
 
@@ -45,7 +45,7 @@ class PitchTimeModule(nn.Module):
         self.time = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=(4, 1), stride=(2, 1), padding=[1, 0],
                               bias=False)
 
-        self.bn = nn.BatchNorm2d(32, eps=1e-5, momentum=0.01, affine=True)
+        self.bn = nn.InstanceNorm2d(32, eps=1e-5, momentum=0.01, affine=True)
 
         self.cbam = CBAM(32)
 
@@ -76,7 +76,7 @@ class ResidualModule(nn.Module):
         self.conv2 = nn.Conv2d(in_channels=channel, out_channels=channel, kernel_size=3, stride=1, padding=1,
                                bias=False)
 
-        self.bn = nn.BatchNorm2d(channel, eps=1e-5, momentum=0.01, affine=True)
+        self.bn = nn.InstanceNorm2d(channel, eps=1e-5, momentum=0.01, affine=True)
 
         self.cbam = CBAM(channel)
 
@@ -107,7 +107,7 @@ class PoolingModule(nn.Module):
         self.conv = nn.Conv2d(in_channels=in_channel, out_channels=out_channel, kernel_size=3, stride=2, padding=1,
                               bias=False)
 
-        self.bn = nn.BatchNorm2d(out_channel, eps=1e-5, momentum=0.01, affine=True)
+        self.bn = nn.InstanceNorm2d(out_channel, eps=1e-5, momentum=0.01, affine=True)
 
         self.cbam = CBAM(out_channel)
 

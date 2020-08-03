@@ -1,7 +1,7 @@
 import argparse
 from config import Config
 
-from agent.barGen import BarGen
+from agent.barGen2 import BarGen
 
 
 def main():

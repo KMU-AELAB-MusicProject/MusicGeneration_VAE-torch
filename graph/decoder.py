@@ -14,7 +14,7 @@ class TimePitchModule(nn.Module):
         self.pitch = nn.ConvTranspose2d(in_channels=1024, out_channels=1024, kernel_size=(1, 3), stride=(1, 3),
                                         bias=False)
 
-        self.bn = nn.BatchNorm2d(1024, eps=1e-5, momentum=0.01, affine=True)
+        self.bn = nn.InstanceNorm2d(1024, eps=1e-5, momentum=0.01, affine=True)
 
         self.cbam = CBAM(1024)
 
@@ -45,7 +45,7 @@ class PitchTimeModule(nn.Module):
         self.time = nn.ConvTranspose2d(in_channels=1024, out_channels=1024, kernel_size=(6, 1), stride=(6, 1),
                                        bias=False)
 
-        self.bn = nn.BatchNorm2d(1024, eps=1e-5, momentum=0.01, affine=True)
+        self.bn = nn.InstanceNorm2d(1024, eps=1e-5, momentum=0.01, affine=True)
         self.cbam = CBAM(1024)
 
         self.relu = nn.ReLU(inplace=True)
@@ -78,9 +78,9 @@ class DeConvModule(nn.Module):
 
         self.conv = nn.Conv2d(in_channels=in_channel, out_channels=out_channel, kernel_size=1, stride=1, bias=False)
 
-        self.bn1 = nn.BatchNorm2d(out_channel, eps=1e-5, momentum=0.01, affine=True)
-        self.bn2 = nn.BatchNorm2d(out_channel, eps=1e-5, momentum=0.01, affine=True)
-        self.bn3 = nn.BatchNorm2d(out_channel, eps=1e-5, momentum=0.01, affine=True)
+        self.bn1 = nn.InstanceNorm2d(out_channel, eps=1e-5, momentum=0.01, affine=True)
+        self.bn2 = nn.InstanceNorm2d(out_channel, eps=1e-5, momentum=0.01, affine=True)
+        self.bn3 = nn.InstanceNorm2d(out_channel, eps=1e-5, momentum=0.01, affine=True)
 
         self.cbam = CBAM(out_channel)
 
@@ -121,9 +121,9 @@ class DeConvPitchPadding(nn.Module):
 
         self.conv = nn.Conv2d(in_channels=in_channel, out_channels=out_channel, kernel_size=1, stride=1, bias=False)
 
-        self.bn1 = nn.BatchNorm2d(out_channel, eps=1e-5, momentum=0.01, affine=True)
-        self.bn2 = nn.BatchNorm2d(out_channel, eps=1e-5, momentum=0.01, affine=True)
-        self.bn3 = nn.BatchNorm2d(out_channel, eps=1e-5, momentum=0.01, affine=True)
+        self.bn1 = nn.InstanceNorm2d(out_channel, eps=1e-5, momentum=0.01, affine=True)
+        self.bn2 = nn.InstanceNorm2d(out_channel, eps=1e-5, momentum=0.01, affine=True)
+        self.bn3 = nn.InstanceNorm2d(out_channel, eps=1e-5, momentum=0.01, affine=True)
 
         self.cbam1 = CBAM(out_channel)
         self.cbam2 = CBAM(out_channel)
@@ -166,7 +166,7 @@ class Decoder(nn.Module):
         self.pitch = PitchTimeModule()
 
         self.fit1 = nn.Conv2d(in_channels=2048, out_channels=1024, kernel_size=1, stride=1, bias=False)
-        self.bn = nn.BatchNorm2d(1024, eps=1e-5, momentum=0.01, affine=True)
+        self.bn = nn.InstanceNorm2d(1024, eps=1e-5, momentum=0.01, affine=True)
 
         self.fit2 = nn.Conv2d(in_channels=64, out_channels=1, kernel_size=1, stride=1, bias=False)
 
