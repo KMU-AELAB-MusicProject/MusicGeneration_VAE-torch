@@ -26,7 +26,7 @@ class Loss(nn.Module):
 
         if is_pretraining:
             out = torch.gt(logits, 0.35).type('torch.cuda.FloatTensor')
-            additional_loss = (torch.gt(labels - out, 0.0001).type('torch.cuda.FloatTensor')).sum() * 0.0008
+            additional_loss = (torch.gt(labels - out, 0.0001).type('torch.cuda.FloatTensor')).sum() * 0.001
             return recon_loss + additional_loss * 0.0008
 
         return recon_loss
