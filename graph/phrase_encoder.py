@@ -47,13 +47,9 @@ class PhraseModel(nn.Module):
 
         self.phrase_encoder = PhraseEncoder(layers)
 
-        self.position_embedding = nn.Embedding(332, 1152)
-        nn.init.uniform_(self.position_embedding.weight, -1.0, 1.0)
-
         self.apply(weights_init)
 
-    def forward(self, phrase, position):        
+    def forward(self, phrase, position):
         z_phrase = self.phrase_encoder(phrase)
-        phrase_feature = z_phrase + self.position_embedding(position)
 
-        return phrase_feature
+        return z_phrase

@@ -3,6 +3,8 @@ class Config(object):
     batch_size = 8
     learning_rate = 0.002
 
+    sigma = 1.0
+
     cuda = True
     gpu_cnt = 4
 

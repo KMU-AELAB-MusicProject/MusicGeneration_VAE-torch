@@ -180,9 +180,15 @@ class Decoder(nn.Module):
 
         self.cbam = CBAM(1024)
 
+        self.position_embedding = nn.Embedding(332, 1152)
+        nn.init.uniform_(self.position_embedding.weight, -1.0, 1.0)
+
         self.apply(weights_init)
 
-    def forward(self, x):
+    def forward(self, bar_feature, phrase_feature, position):
+        phrase_feature = phrase_feature + self.position_embedding(position)
+        x = torch.cat((bar_feature, phrase_feature), dim=1)
+
         x = x.view(-1, 2304, 1, 1)
         pitch = self.pitch(x)
         time = self.time(x)
