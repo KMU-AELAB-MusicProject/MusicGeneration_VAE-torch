@@ -252,18 +252,18 @@ class BarGen(object):
             self.iteration += 1
 
             ####################
+            self.encoder.train()
+            self.decoder.train()
+            self.phrase_encoder.train()
+            self.z_discriminator_bar.train()
+            self.z_discriminator_phrase.train()
+
             self.encoder.zero_grad()
             self.decoder.zero_grad()
             self.phrase_encoder.zero_grad()
             self.z_discriminator_bar.zero_grad()
             self.z_discriminator_phrase.zero_grad()
             if self.epoch > self.pretraining_step_size:
-                self.encoder.train()
-                self.decoder.train()
-                self.phrase_encoder.train()
-                self.z_discriminator_bar.train()
-                self.z_discriminator_phrase.train()
-
                 #################### Discriminator ####################
                 self.free(self.z_discriminator_bar)
                 self.free(self.z_discriminator_phrase)
