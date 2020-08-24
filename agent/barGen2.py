@@ -66,7 +66,7 @@ class BarGen(object):
         # define optimizer
         self.opt_enc = torch.optim.Adam(self.encoder.parameters(), lr=self.lr_enc)
         self.opt_dec = torch.optim.Adam(self.decoder.parameters(), lr=self.lr_dec)
-        self.opt_phrase_enc = torch.optim.Adam(self.phrase_encoder.parameters(), lr=self.lr_dec)
+        self.opt_phrase_enc = torch.optim.Adam(self.phrase_encoder.parameters(), lr=self.lr_phrase_enc)
         self.opt_Zdiscriminator_bar = torch.optim.Adam(self.z_discriminator_bar.parameters(),
                                                        lr=self.lr_Zdiscriminator_bar)
         self.opt_Zdiscriminator_phrase = torch.optim.Adam(self.z_discriminator_phrase.parameters(),
@@ -77,8 +77,8 @@ class BarGen(object):
                                                                         cooldown=6)
         self.scheduler_dec = torch.optim.lr_scheduler.ReduceLROnPlateau(self.opt_dec, mode='min', factor=0.8,
                                                                         cooldown=6)
-        self.scheduler_phrase_enc = torch.optim.lr_scheduler.ReduceLROnPlateau(self.opt_dec, mode='min', factor=0.8,
-                                                                               cooldown=6)
+        self.scheduler_phrase_enc = torch.optim.lr_scheduler.ReduceLROnPlateau(self.opt_phrase_enc, mode='min',
+                                                                               factor=0.8, cooldown=6)
         self.scheduler_Zdiscriminator_bar = torch.optim.lr_scheduler.ReduceLROnPlateau(self.opt_Zdiscriminator_bar,
                                                                                        mode='min', factor=0.8,
                                                                                        cooldown=6)
@@ -121,7 +121,7 @@ class BarGen(object):
 
         print('Number of encoder parameters: {}'.format(sum([p.data.nelement() for p in self.encoder.parameters()])))
         print('Number of decoder parameters: {}'.format(sum([p.data.nelement() for p in self.decoder.parameters()])))
-        print('Number of phrase_encoder parameters: {}'.format(sum([p.data.nelement() for p in self.decoder.parameters()])))
+        print('Number of phrase_encoder parameters: {}'.format(sum([p.data.nelement() for p in self.phrase_encoder.parameters()])))
         print('Number of barZ discriminator parameters: {}'.format(sum([p.data.nelement() for p in self.z_discriminator_bar.parameters()])))
         print('Number of phraseZ discriminator parameters: {}'.format(sum([p.data.nelement() for p in self.z_discriminator_phrase.parameters()])))
         
