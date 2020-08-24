@@ -66,7 +66,7 @@ class BarGen(object):
         # define optimizer
         self.opt_enc = torch.optim.Adam(self.encoder.parameters(), lr=self.lr_enc)
         self.opt_dec = torch.optim.Adam(self.decoder.parameters(), lr=self.lr_dec)
-        self.opt_phrase_enc = torch.optim.Adam(self.decoder.parameters(), lr=self.lr_dec)
+        self.opt_phrase_enc = torch.optim.Adam(self.phrase_encoder.parameters(), lr=self.lr_dec)
         self.opt_Zdiscriminator_bar = torch.optim.Adam(self.z_discriminator_bar.parameters(),
                                                        lr=self.lr_Zdiscriminator_bar)
         self.opt_Zdiscriminator_phrase = torch.optim.Adam(self.z_discriminator_phrase.parameters(),
@@ -300,12 +300,6 @@ class BarGen(object):
 
                 avg_barZ_disc_loss.update(barZ_dics_loss)
                 avg_phraseZ_disc_loss.update(phraseZ_dics_loss)
-
-            self.encoder.zero_grad()
-            self.decoder.zero_grad()
-            self.phrase_encoder.zero_grad()
-            self.z_discriminator_bar.zero_grad()
-            self.z_discriminator_phrase.zero_grad()
 
             self.encoder.train()
             self.decoder.train()
