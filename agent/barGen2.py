@@ -221,15 +221,14 @@ class BarGen(object):
             self.iteration += 1
 
             ####################
-            self.generator.eval()
-            self.z_discriminator_bar.train()
-            self.z_discriminator_phrase.train()
-
             self.generator.zero_grad()
             self.z_discriminator_bar.zero_grad()
             self.z_discriminator_phrase.zero_grad()
+            if self.epoch > self.pretraining_step_size:
+                self.generator.eval()
+                self.z_discriminator_bar.train()
+                self.z_discriminator_phrase.train()
 
-            if (curr_it + self.epoch) % div_flag == 1:
                 #################### Discriminator ####################
                 self.free(self.z_discriminator_bar)
                 self.free(self.z_discriminator_phrase)
@@ -279,7 +278,7 @@ class BarGen(object):
             image_sample = gen_note
             origin_image = note
 
-            gen_loss = self.loss_gen(gen_note, note, True)
+            gen_loss = self.loss_gen(gen_note, note, True if self.epoch <= self.pretraining_step_size else False)
 
             gen_loss.backward()
             self.opt_gen.step()

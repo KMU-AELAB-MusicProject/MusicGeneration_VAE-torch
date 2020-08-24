@@ -1,7 +1,7 @@
 class Config(object):
     epoch = 5000
-    batch_size = 3
-    learning_rate = 0.0008
+    batch_size = 8
+    learning_rate = 0.002
 
     cuda = True
     gpu_cnt = 4

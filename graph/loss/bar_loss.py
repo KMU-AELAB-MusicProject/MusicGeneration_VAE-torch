@@ -21,15 +21,16 @@ class Loss(nn.Module):
         self.default_smoothing = torch.Tensor(np.array([0.1 / 60], dtype=np.float32)).cuda()
 
     def forward(self, logits, labels, is_pretraining=False):
-        smoothed_labels = (labels * 0.82) + self.default_smoothing + self.distribution_smoothing
-        recon_loss = self.loss(logits, smoothed_labels)
-
         if is_pretraining:
+            recon_loss = self.loss(logits, labels)
             out = torch.gt(logits, 0.35).type('torch.cuda.FloatTensor')
             additional_loss = (torch.gt(labels - out, 0.0001).type('torch.cuda.FloatTensor')).sum() * 0.001
-            return recon_loss + additional_loss * 0.0008
+            return recon_loss + additional_loss * 0.001
 
-        return recon_loss
+        else:
+            smoothed_labels = (labels * 0.82) + self.default_smoothing + self.distribution_smoothing
+            recon_loss = self.loss(logits, smoothed_labels)
+            return recon_loss
 
 
 class DLoss(nn.Module):
