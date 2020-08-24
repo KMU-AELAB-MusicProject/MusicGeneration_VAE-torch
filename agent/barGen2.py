@@ -258,9 +258,9 @@ class BarGen(object):
             self.z_discriminator_bar.zero_grad()
             self.z_discriminator_phrase.zero_grad()
             if self.epoch > self.pretraining_step_size:
-                self.encoder.eval()
-                self.decoder.eval()
-                self.phrase_encoder.eval()
+                self.encoder.train()
+                self.decoder.train()
+                self.phrase_encoder.train()
                 self.z_discriminator_bar.train()
                 self.z_discriminator_phrase.train()
 
@@ -301,11 +301,6 @@ class BarGen(object):
                 avg_barZ_disc_loss.update(barZ_dics_loss)
                 avg_phraseZ_disc_loss.update(phraseZ_dics_loss)
 
-            self.encoder.train()
-            self.decoder.train()
-            self.phrase_encoder.train()
-            self.z_discriminator_bar.eval()
-            self.z_discriminator_phrase.eval()
             #################### Generator ####################
             self.free(self.encoder)
             self.free(self.decoder)
@@ -337,15 +332,15 @@ class BarGen(object):
             dec_loss = self.loss_dec(gen_note, note, True if self.epoch <= self.pretraining_step_size else False)
 
             dec_loss.backward()
-            phrase_enc_loss.backward()
             enc_loss.backward()
+            phrase_enc_loss.backward()
 
             self.opt_dec.step()
-            self.opt_phrase_enc.step()
             self.opt_enc.step()
+            self.opt_phrase_enc.step()
 
-            avg_enc_loss.update(enc_loss)
             avg_dec_loss.update(dec_loss)
+            avg_enc_loss.update(enc_loss)
             avg_phrase_enc_loss.update(phrase_enc_loss)
 
             self.summary_writer.add_scalar("train/Decoder_loss", avg_dec_loss.val, self.epoch)
