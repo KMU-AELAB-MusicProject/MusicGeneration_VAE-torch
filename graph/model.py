@@ -19,23 +19,19 @@ class Model(nn.Module):
 
     def forward(self, note, pre_note, phrase, position, is_train=True):
         if is_train:
-            phrase_feature = self.phrase_encoder(phrase, position)
+            phrase_feature = self.phrase_encoder(phrase)
 
             z = self.encoder(note)
             pre_z = self.encoder(pre_note)
             bar_feature = z + pre_z
 
-            feature = torch.cat((bar_feature, phrase_feature), dim=1)
-
-            gen_note = self.decoder(feature)
+            gen_note = self.decoder(bar_feature, phrase_feature, position)
             
             return gen_note, z, pre_z, phrase_feature
         else:
-            phrase_feature = self.phrase_encoder(phrase, position)
+            phrase_feature = self.phrase_encoder(phrase)
 
             pre_z = self.encoder(pre_note)
             bar_feature = note + pre_z
 
-            feature = torch.cat((bar_feature, phrase_feature), dim=1)
-
-            return self.decoder(feature)
+            return self.decoder(bar_feature, phrase_feature, position)

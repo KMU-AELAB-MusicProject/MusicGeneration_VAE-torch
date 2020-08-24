@@ -14,8 +14,7 @@ from torch.backends import cudnn
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 
-from graph.decoder import Decoder
-from graph.encoder import Encoder
+from graph.model import Model
 from graph.phrase_encoder import PhraseModel
 from graph.z_discriminator import PhraseZDiscriminator, BarZDiscriminator
 from graph.loss.bar_loss import Loss, DLoss
@@ -43,42 +42,30 @@ class BarGen(object):
                                      pin_memory=self.config.pin_memory, collate_fn=self.make_batch)
 
         # define models ( generator and discriminator)
-        self.encoder = Encoder([64, 128, 256, 512, 1024])
-        self.decoder = Decoder([1024, 512, 256, 128, 64])
-        self.phrase_encoder = PhraseModel([64, 128, 256, 512, 1024])
+        self.generator = Model()
         self.z_discriminator_phrase = PhraseZDiscriminator()
         self.z_discriminator_bar = BarZDiscriminator()
 
         # define loss
-        self.loss_enc = DLoss().cuda()
-        self.loss_dec = Loss().cuda()
-        self.loss_phrase_enc = DLoss().cuda()
+        self.loss_generator = DLoss().cuda()
         self.loss_bar = DLoss().cuda()
         self.loss_phrase = DLoss().cuda()
 
         # define lr
-        self.lr_enc = self.config.learning_rate
-        self.lr_dec = self.config.learning_rate
-        self.lr_phrase_enc = self.config.learning_rate
+        self.lr_generator = self.config.learning_rate
         self.lr_Zdiscriminator_bar = self.config.learning_rate
         self.lr_Zdiscriminator_phrase = self.config.learning_rate
 
         # define optimizer
-        self.opt_enc = torch.optim.Adam(self.encoder.parameters(), lr=self.lr_enc)
-        self.opt_dec = torch.optim.Adam(self.decoder.parameters(), lr=self.lr_dec)
-        self.opt_phrase_enc = torch.optim.Adam(self.phrase_encoder.parameters(), lr=self.lr_phrase_enc)
+        self.opt_generator = torch.optim.Adam(self.generator.parameters(), lr=self.lr_generator)
         self.opt_Zdiscriminator_bar = torch.optim.Adam(self.z_discriminator_bar.parameters(),
                                                        lr=self.lr_Zdiscriminator_bar)
         self.opt_Zdiscriminator_phrase = torch.optim.Adam(self.z_discriminator_phrase.parameters(),
                                                           lr=self.lr_Zdiscriminator_phrase)
 
         # define optimize scheduler
-        self.scheduler_enc = torch.optim.lr_scheduler.ReduceLROnPlateau(self.opt_enc, mode='min', factor=0.8,
-                                                                        cooldown=6)
-        self.scheduler_dec = torch.optim.lr_scheduler.ReduceLROnPlateau(self.opt_dec, mode='min', factor=0.8,
-                                                                        cooldown=6)
-        self.scheduler_phrase_enc = torch.optim.lr_scheduler.ReduceLROnPlateau(self.opt_phrase_enc, mode='min',
-                                                                               factor=0.8, cooldown=6)
+        self.scheduler_generator = torch.optim.lr_scheduler.ReduceLROnPlateau(self.opt_generator, mode='min',
+                                                                              factor=0.8, cooldown=6)
         self.scheduler_Zdiscriminator_bar = torch.optim.lr_scheduler.ReduceLROnPlateau(self.opt_Zdiscriminator_bar,
                                                                                        mode='min', factor=0.8,
                                                                                        cooldown=6)
@@ -100,15 +87,11 @@ class BarGen(object):
 
         # cuda setting
         gpu_list = list(range(self.config.gpu_cnt))
-        self.encoder = nn.DataParallel(self.encoder, device_ids=gpu_list)
-        self.decoder = nn.DataParallel(self.decoder, device_ids=gpu_list)
-        self.phrase_encoder = nn.DataParallel(self.phrase_encoder, device_ids=gpu_list)
+        self.generator = nn.DataParallel(self.generator, device_ids=gpu_list)
         self.z_discriminator_bar = nn.DataParallel(self.z_discriminator_bar, device_ids=gpu_list)
         self.z_discriminator_phrase = nn.DataParallel(self.z_discriminator_phrase, device_ids=gpu_list)
 
-        self.encoder = self.encoder.cuda()
-        self.decoder = self.decoder.cuda()
-        self.phrase_encoder = self.phrase_encoder.cuda()
+        self.generator = self.generator.cuda()
         self.z_discriminator_bar = self.z_discriminator_bar.cuda()
         self.z_discriminator_phrase = self.z_discriminator_phrase.cuda()
 
@@ -119,9 +102,7 @@ class BarGen(object):
         self.summary_writer = SummaryWriter(log_dir=os.path.join(self.config.root_path, self.config.summary_dir),
                                             comment='BarGen')
 
-        print('Number of encoder parameters: {}'.format(sum([p.data.nelement() for p in self.encoder.parameters()])))
-        print('Number of decoder parameters: {}'.format(sum([p.data.nelement() for p in self.decoder.parameters()])))
-        print('Number of phrase_encoder parameters: {}'.format(sum([p.data.nelement() for p in self.phrase_encoder.parameters()])))
+        print('Number of generator parameters: {}'.format(sum([p.data.nelement() for p in self.generator.parameters()])))
         print('Number of barZ discriminator parameters: {}'.format(sum([p.data.nelement() for p in self.z_discriminator_bar.parameters()])))
         print('Number of phraseZ discriminator parameters: {}'.format(sum([p.data.nelement() for p in self.z_discriminator_phrase.parameters()])))
         
@@ -163,14 +144,8 @@ class BarGen(object):
             print("Loading checkpoint '{}'".format(filename))
             checkpoint = torch.load(filename)
 
-            self.encoder.load_state_dict(checkpoint['encoder_state_dict'])
-            self.opt_enc.load_state_dict(checkpoint['enc_optimizer'])
-
-            self.decoder.load_state_dict(checkpoint['decoder_state_dict'])
-            self.opt_dec.load_state_dict(checkpoint['dec_optimizer'])
-
-            self.phrase_encoder.load_state_dict(checkpoint['phrase_encoder_state_dict'])
-            self.opt_phrase_enc.load_state_dict(checkpoint['phrase_enc_optimizer'])
+            self.generator.load_state_dict(checkpoint['phrase_encoder_state_dict'])
+            self.opt_generator.load_state_dict(checkpoint['generator_optimizer'])
 
             self.z_discriminator_bar.load_state_dict(checkpoint['z_discriminator_bar_state_dict'])
             self.opt_Zdiscriminator_bar.load_state_dict(checkpoint['opt_Zdiscriminator_bar_optimizer'])
@@ -187,14 +162,8 @@ class BarGen(object):
         # file_name = os.path.join(self.config.root_path, self.config.checkpoint_dir, file_name)
 
         state = {
-            'encoder_state_dict': self.encoder.state_dict(),
-            'enc_optimizer': self.opt_enc.state_dict(),
-
-            'decoder_state_dict': self.decoder.state_dict(),
-            'dec_optimizer': self.opt_dec.state_dict(),
-
-            'phrase_encoder_state_dict': self.phrase_encoder.state_dict(),
-            'phrase_enc_optimizer': self.opt_phrase_enc.state_dict(),
+            'generator_state_dict': self.generator.state_dict(),
+            'generator_optimizer': self.opt_generator.state_dict(),
 
             'z_discriminator_bar_state_dict': self.z_discriminator_bar.state_dict(),
             'opt_Zdiscriminator_bar_optimizer': self.opt_Zdiscriminator_bar.state_dict(),
@@ -229,9 +198,7 @@ class BarGen(object):
         image_sample = None
         Tensor = torch.cuda.FloatTensor
 
-        avg_enc_loss = AverageMeter()
-        avg_dec_loss = AverageMeter()
-        avg_phrase_enc_loss = AverageMeter()
+        avg_generator_loss = AverageMeter()
         avg_barZ_disc_loss = AverageMeter()
         avg_phraseZ_disc_loss = AverageMeter()
         for curr_it, (note, pre_note, pre_phrase, position) in enumerate(tqdm_batch):
@@ -252,15 +219,11 @@ class BarGen(object):
             self.iteration += 1
 
             ####################
-            self.encoder.train()
-            self.decoder.train()
-            self.phrase_encoder.train()
+            self.generator.train()
             self.z_discriminator_bar.train()
             self.z_discriminator_phrase.train()
 
-            self.encoder.zero_grad()
-            self.decoder.zero_grad()
-            self.phrase_encoder.zero_grad()
+            self.generator.zero_grad()
             self.z_discriminator_bar.zero_grad()
             self.z_discriminator_phrase.zero_grad()
             if self.epoch > self.pretraining_step_size:
@@ -268,13 +231,9 @@ class BarGen(object):
                 self.free(self.z_discriminator_bar)
                 self.free(self.z_discriminator_phrase)
 
-                self.frozen(self.encoder)
-                self.frozen(self.decoder)
-                self.frozen(self.phrase_encoder)
+                self.frozen(self.generator)
 
-                phrase_feature = self.phrase_encoder(pre_phrase)
-                z = self.encoder(note)
-                pre_z = self.encoder(pre_note)
+                _, z, pre_z, phrase_feature = self.generator(note, pre_note, pre_phrase, position)
 
                 #### Phrase Feature ###
                 phrase_fake = (torch.randn(phrase_feature.size(0), phrase_feature.size(1)) * self.config.sigma).cuda()
@@ -302,50 +261,35 @@ class BarGen(object):
                 avg_phraseZ_disc_loss.update(phraseZ_dics_loss)
 
             #################### Generator ####################
-            self.free(self.encoder)
-            self.free(self.decoder)
-            self.free(self.phrase_encoder)
+            self.free(self.generator)
 
             self.frozen(self.z_discriminator_bar)
             self.frozen(self.z_discriminator_phrase)
 
-            phrase_feature = self.phrase_encoder(pre_phrase)
-            z = self.encoder(note)
-            pre_z = self.encoder(pre_note)
-
-            bar_feature = z + pre_z
-            gen_note = self.decoder(bar_feature, phrase_feature, position)
+            gen_note, z, pre_z, phrase_feature = self.generator(note, pre_note, pre_phrase, position)
 
             image_sample = gen_note
             origin_image = note
 
-            #### Phrase Encoder ###
+            #### Phrase Encoder Loss ###
             d_phrase_real = self.z_discriminator_phrase(phrase_feature).view(-1)
-            phrase_enc_loss = self.loss_phrase_enc(d_phrase_real, valid_target)
+            loss = self.loss_phrase(d_phrase_real, valid_target)
 
-            #### Bar Encoder ####
+            #### Bar Encoder Loss ####
             d_bar_real1 = self.z_discriminator_bar(z).view(-1)
             d_bar_real2 = self.z_discriminator_bar(pre_z).view(-1)
-            enc_loss = self.loss_enc(d_bar_real1, valid_target) + self.loss_enc(d_bar_real2, valid_target)
+            loss += self.loss_bar(d_bar_real1, valid_target) + self.loss_bar(d_bar_real2, valid_target)
 
-            #### Bar Decoder ####
-            dec_loss = self.loss_dec(gen_note, note, True if self.epoch <= self.pretraining_step_size else False)
+            #### Generator Los ####
+            loss += self.loss_generator(gen_note, note, True if self.epoch <= self.pretraining_step_size else False)
 
-            dec_loss.backward()
-            enc_loss.backward()
-            phrase_enc_loss.backward()
+            loss.backward()
 
-            self.opt_dec.step()
-            self.opt_enc.step()
-            self.opt_phrase_enc.step()
+            self.opt_generator.step()
 
-            avg_dec_loss.update(dec_loss)
-            avg_enc_loss.update(enc_loss)
-            avg_phrase_enc_loss.update(phrase_enc_loss)
+            avg_generator_loss.update(loss)
 
-            self.summary_writer.add_scalar("train/Decoder_loss", avg_dec_loss.val, self.epoch)
-            self.summary_writer.add_scalar("train/Encoder_loss", avg_enc_loss.val, self.epoch)
-            self.summary_writer.add_scalar("train/PhraseEncoder_loss", avg_phrase_enc_loss.val, self.epoch)
+            self.summary_writer.add_scalar("train/Generator_loss", avg_generator_loss.val, self.epoch)
             self.summary_writer.add_scalar("train/Bar_Z_Discriminator_loss", avg_barZ_disc_loss.val, self.epoch)
             self.summary_writer.add_scalar("train/Phrase_Z_discriminator_loss", avg_phraseZ_disc_loss.val, self.epoch)
 
@@ -385,11 +329,10 @@ class BarGen(object):
         self.summary_writer.add_image("eval/generated 1", outputs[0].reshape(1, 96 * 4, 60), self.epoch)
         self.summary_writer.add_image("eval/generated 2", outputs[1].reshape(1, 96 * 4, 60), self.epoch)
 
-        self.scheduler_enc.step(avg_enc_loss)
-        self.scheduler_dec.step(avg_dec_loss)
-        self.scheduler_phrase_enc.step(avg_phrase_enc_loss)
+        self.scheduler_generator.step(avg_generator_loss)
         self.scheduler_Zdiscriminator_bar.step(avg_barZ_disc_loss.val)
         self.scheduler_Zdiscriminator_phrase.step(avg_phraseZ_disc_loss.val)
 
-        self.logger.debug('encoder lr: {}, decoder lr: {}, phrase_encoderlr: {},  barZ disc lr: {},  phraseZ disc lr: {}'.format(
-            self.lr_enc, self.lr_dec, self.lr_phrase_enc, self.lr_Zdiscriminator_bar, self.lr_Zdiscriminator_phrase))
+        self.logger.debug('generator lr: {}, barZ disc lr: {},  phraseZ disc lr: {}'.format(self.lr_generator,
+                                                                                            self.lr_Zdiscriminator_bar,
+                                                                                            self.lr_Zdiscriminator_phrase))
