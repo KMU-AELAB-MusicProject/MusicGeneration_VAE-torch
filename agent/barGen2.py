@@ -47,7 +47,7 @@ class BarGen(object):
         self.z_discriminator_bar = BarZDiscriminator()
 
         # define loss
-        self.loss_generator = DLoss().cuda()
+        self.loss_generator = Loss().cuda()
         self.loss_bar = DLoss().cuda()
         self.loss_phrase = DLoss().cuda()
 
