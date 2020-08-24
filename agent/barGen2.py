@@ -314,8 +314,8 @@ class BarGen(object):
             self.z_discriminator_phrase.eval()
             #################### Generator ####################
             self.free(self.encoder)
-            self.frozen(self.decoder)
-            self.frozen(self.phrase_encoder)
+            self.free(self.decoder)
+            self.free(self.phrase_encoder)
 
             self.frozen(self.z_discriminator_bar)
             self.frozen(self.z_discriminator_phrase)
