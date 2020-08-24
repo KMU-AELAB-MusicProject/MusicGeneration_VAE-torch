@@ -329,7 +329,7 @@ class BarGen(object):
         self.summary_writer.add_image("eval/generated 1", outputs[0].reshape(1, 96 * 4, 60), self.epoch)
         self.summary_writer.add_image("eval/generated 2", outputs[1].reshape(1, 96 * 4, 60), self.epoch)
 
-        self.scheduler_generator.step(avg_generator_loss)
+        self.scheduler_generator.step(avg_generator_loss.val)
         self.scheduler_Zdiscriminator_bar.step(avg_barZ_disc_loss.val)
         self.scheduler_Zdiscriminator_phrase.step(avg_phraseZ_disc_loss.val)
 
