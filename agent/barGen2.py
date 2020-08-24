@@ -336,12 +336,12 @@ class BarGen(object):
             #### Bar Decoder ####
             dec_loss = self.loss_dec(gen_note, note, True if self.epoch <= self.pretraining_step_size else False)
 
-            phrase_enc_loss.backward()
             dec_loss.backward()
+            phrase_enc_loss.backward()
             enc_loss.backward()
 
-            self.opt_phrase_enc.step()
             self.opt_dec.step()
+            self.opt_phrase_enc.step()
             self.opt_enc.step()
 
             avg_enc_loss.update(enc_loss)
