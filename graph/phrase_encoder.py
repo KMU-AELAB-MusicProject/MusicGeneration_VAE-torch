@@ -49,7 +49,7 @@ class PhraseModel(nn.Module):
 
         self.apply(weights_init)
 
-    def forward(self, phrase, position):
+    def forward(self, phrase):
         z_phrase = self.phrase_encoder(phrase)
 
         return z_phrase
