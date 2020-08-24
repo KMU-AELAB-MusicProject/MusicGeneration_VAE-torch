@@ -226,7 +226,7 @@ class BarGen(object):
             self.generator.zero_grad()
             self.z_discriminator_bar.zero_grad()
             self.z_discriminator_phrase.zero_grad()
-            if self.epoch > self.pretraining_step_size:
+            if self.epoch % 2 is 0:
                 #################### Discriminator ####################
                 self.free(self.z_discriminator_bar)
                 self.free(self.z_discriminator_phrase)
