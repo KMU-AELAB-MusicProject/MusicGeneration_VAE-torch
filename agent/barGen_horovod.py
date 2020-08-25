@@ -49,13 +49,13 @@ class BarGen(object):
 
         # define models ( generator and discriminator)
         self.generator = Model()
-        self.generator = self.generator.cuda()
+        self.generator.cuda()
 
         self.z_discriminator_bar = BarZDiscriminator()
-        self.z_discriminator_bar = self.z_discriminator_bar.cuda()
+        self.z_discriminator_bar.cuda()
 
         self.z_discriminator_phrase = PhraseZDiscriminator()
-        self.z_discriminator_phrase = self.z_discriminator_phrase.cuda()
+        self.z_discriminator_phrase.cuda()
 
         # define loss
         self.loss_generator = Loss().cuda()
