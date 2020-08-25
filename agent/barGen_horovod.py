@@ -79,7 +79,7 @@ class BarGen(object):
         self.opt_Zdiscriminator_bar = hvd.DistributedOptimizer(self.opt_Zdiscriminator_bar,
                                                                named_parameters=self.z_discriminator_bar.named_parameters())
         self.opt_Zdiscriminator_phrase = hvd.DistributedOptimizer(self.opt_Zdiscriminator_phrase,
-                                                                  named_parameters=self.z_discriminator_phrase)
+                                                                  named_parameters=self.z_discriminator_phrase.named_parameters())
 
         # define optimize scheduler
         self.scheduler_generator = torch.optim.lr_scheduler.ReduceLROnPlateau(self.opt_generator, mode='min',
