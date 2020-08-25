@@ -30,6 +30,9 @@ cudnn.benchmark = True
 
 class BarGen(object):
     def __init__(self, config):
+        hvd.init()
+        torch.cuda.set_device(hvd.local_rank())
+
         self.config = config
 
         self.pretraining_step_size = self.config.pretraining_step_size
