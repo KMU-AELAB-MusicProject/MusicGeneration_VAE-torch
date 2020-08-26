@@ -290,8 +290,9 @@ class BarGen(object):
             avg_generator_loss.update(loss)
 
             self.summary_writer.add_scalar("train/Generator_loss", avg_generator_loss.val, self.epoch)
-            self.summary_writer.add_scalar("train/Bar_Z_Discriminator_loss", avg_barZ_disc_loss.val, self.epoch)
-            self.summary_writer.add_scalar("train/Phrase_Z_discriminator_loss", avg_phraseZ_disc_loss.val, self.epoch)
+            if self.epoch % 2 is 0:
+                self.summary_writer.add_scalar("train/Bar_Z_Discriminator_loss", avg_barZ_disc_loss.val, self.epoch)
+                self.summary_writer.add_scalar("train/Phrase_Z_discriminator_loss", avg_phraseZ_disc_loss.val, self.epoch)
 
         tqdm_batch.close()
 
