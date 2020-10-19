@@ -106,6 +106,10 @@ class BarGen(object):
         print('Number of barZ discriminator parameters: {}'.format(sum([p.data.nelement() for p in self.z_discriminator_bar.parameters()])))
         print('Number of phraseZ discriminator parameters: {}'.format(sum([p.data.nelement() for p in self.z_discriminator_phrase.parameters()])))
         
+    def get_lr(self, optimizer):
+        for param_group in optimizer.param_groups:
+            return param_group['lr']
+
     def set_logger(self):
         logger = logging.getLogger()
         logger.setLevel(logging.DEBUG)
@@ -113,7 +117,7 @@ class BarGen(object):
         formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         file_handler = logging.FileHandler(filename="train_epoch.log")
     
-        file_handler.setLevel(logging.DEBUG)
+        file_handler.setLevel(logging.WARNING)
 
         file_handler.setFormatter(formatter)
 
@@ -144,7 +148,7 @@ class BarGen(object):
             print("Loading checkpoint '{}'".format(filename))
             checkpoint = torch.load(filename)
 
-            self.generator.load_state_dict(checkpoint['phrase_encoder_state_dict'])
+            self.generator.load_state_dict(checkpoint['generator_state_dict'])
             self.opt_generator.load_state_dict(checkpoint['generator_optimizer'])
 
             self.z_discriminator_bar.load_state_dict(checkpoint['z_discriminator_bar_state_dict'])
@@ -226,7 +230,7 @@ class BarGen(object):
             self.generator.zero_grad()
             self.z_discriminator_bar.zero_grad()
             self.z_discriminator_phrase.zero_grad()
-            if self.epoch % 2 is 0:
+            if self.epoch > self.pretraining_step_size and (self.epoch + curr_it) % 2 is 0:
                 #################### Discriminator ####################
                 self.free(self.z_discriminator_bar)
                 self.free(self.z_discriminator_phrase)
@@ -290,7 +294,7 @@ class BarGen(object):
             avg_generator_loss.update(loss)
 
             self.summary_writer.add_scalar("train/Generator_loss", avg_generator_loss.val, self.epoch)
-            if self.epoch % 2 is 0:
+            if self.epoch > self.pretraining_step_size and self.epoch % 2 is 0:
                 self.summary_writer.add_scalar("train/Bar_Z_Discriminator_loss", avg_barZ_disc_loss.val, self.epoch)
                 self.summary_writer.add_scalar("train/Phrase_Z_discriminator_loss", avg_phraseZ_disc_loss.val, self.epoch)
 
@@ -311,6 +315,10 @@ class BarGen(object):
         self.summary_writer.add_image("train/origin 3", origin_image[2].reshape(1, 96, 60), self.epoch)
 
         with torch.no_grad():
+            self.generator.eval()
+            self.z_discriminator_bar.eval()
+            self.z_discriminator_phrase.eval()
+            
             outputs = []
             pre_phrase = torch.zeros(1, 1, 384, 60, dtype=torch.float32)
             pre_bar = torch.zeros(1, 1, 96, 60, dtype=torch.float32)
@@ -331,9 +339,13 @@ class BarGen(object):
         self.summary_writer.add_image("eval/generated 2", outputs[1].reshape(1, 96 * 4, 60), self.epoch)
 
         self.scheduler_generator.step(avg_generator_loss.val)
-        self.scheduler_Zdiscriminator_bar.step(avg_barZ_disc_loss.val)
-        self.scheduler_Zdiscriminator_phrase.step(avg_phraseZ_disc_loss.val)
+        if self.epoch > self.pretraining_step_size and (self.epoch + curr_it) % 2 is 0:
+            self.scheduler_Zdiscriminator_bar.step(avg_barZ_disc_loss.val)
+            self.scheduler_Zdiscriminator_phrase.step(avg_phraseZ_disc_loss.val)
 
-        self.logger.debug('generator lr: {}, barZ disc lr: {},  phraseZ disc lr: {}'.format(self.lr_generator,
-                                                                                            self.lr_Zdiscriminator_bar,
-                                                                                            self.lr_Zdiscriminator_phrase))
+        self.logger.warning('loss info - generator: {}, barZ disc: {},  phraseZ disc: {}'.format(avg_generator_loss.val,
+                                                                                                 avg_barZ_disc_loss.val,
+                                                                                                 avg_phraseZ_disc_loss.val))
+        self.logger.warning('lr info - generator: {}, barZ disc: {},  phraseZ disc: {}'.format(self.get_lr(self.opt_generator),
+                                                                                               self.get_lr(self.opt_Zdiscriminator_bar),
+                                                                                               self.get_lr(self.opt_Zdiscriminator_phrase)))

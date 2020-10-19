@@ -161,6 +161,10 @@ class Decoder(nn.Module):
         self.leaky = nn.LeakyReLU(inplace=True)
         self.relu = nn.ReLU(inplace=True)
         self.sigmoid = nn.Sigmoid()
+        self.dropout = nn.Dropout(p=0.3)
+        
+        self.bar_linear = nn.Linear(1152 * 2, 1152)
+        self.phrase_linear = nn.Linear(1152 * 2, 1152)
 
         self.time = TimePitchModule()
         self.pitch = PitchTimeModule()
@@ -185,8 +189,16 @@ class Decoder(nn.Module):
 
         self.apply(weights_init)
 
-    def forward(self, bar_feature, phrase_feature, position):
-        phrase_feature = phrase_feature + self.position_embedding(position)
+    def forward(self, z, pre_z, phrase_feature, position):
+        phrase_feature = torch.cat((phrase_feature, self.position_embedding(position)), dim=1)
+        phrase_feature = self.phrase_linear(phrase_feature)
+        phrase_feature = self.relu(phrase_feature)
+        phrase_feature = self.dropout(phrase_feature)
+        
+        bar_feature = torch.cat((z, pre_z), dim=1)
+        bar_feature = self.bar_linear(bar_feature)
+        bar_feature = self.relu(bar_feature)
+        bar_feature = self.dropout(bar_feature)
         x = torch.cat((bar_feature, phrase_feature), dim=1)
 
         x = x.view(-1, 2304, 1, 1)

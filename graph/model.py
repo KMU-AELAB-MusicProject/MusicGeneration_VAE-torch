@@ -23,15 +23,13 @@ class Model(nn.Module):
 
             z = self.encoder(note)
             pre_z = self.encoder(pre_note)
-            bar_feature = z + pre_z
 
-            gen_note = self.decoder(bar_feature, phrase_feature, position)
+            gen_note = self.decoder(z, pre_z, phrase_feature, position)
             
             return gen_note, z, pre_z, phrase_feature
         else:
             phrase_feature = self.phrase_encoder(phrase)
 
             pre_z = self.encoder(pre_note)
-            bar_feature = note + pre_z
 
-            return self.decoder(bar_feature, phrase_feature, position)
+            return self.decoder(note, pre_z, phrase_feature, position)
