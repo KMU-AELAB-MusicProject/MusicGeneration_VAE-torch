@@ -16,6 +16,7 @@ from torch.utils.data import DataLoader
 
 from graph.model_with_gan import Model
 from graph.phrase_encoder import PhraseModel
+from graph.bar_discriminator import BarDiscriminator
 from graph.bar_discriminator_with_feature import BarFeatureDiscriminator
 from graph.z_discriminator import PhraseZDiscriminator, BarZDiscriminator
 from graph.loss.bar_loss import Loss, DLoss

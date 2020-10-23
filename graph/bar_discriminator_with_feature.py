@@ -5,7 +5,7 @@ from graph.weights_initializer import weights_init
 
 class BarFeatureDiscriminator(nn.Module):
     def __init__(self):
-        super(BarDiscriminator, self).__init__()
+        super(BarFeatureDiscriminator, self).__init__()
 
         self.linear1 = nn.Linear(1152, 512, bias=False)
         self.linear2 = nn.Linear(96, 1, bias=False)
