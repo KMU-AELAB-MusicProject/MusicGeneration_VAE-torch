@@ -331,8 +331,8 @@ class BarGen(object):
 
         self.scheduler_generator.step(avg_generator_loss.val)
         if self.epoch > self.pretraining_step_size:
-            self.scheduler_discriminator.step(avg_discriminator_loss)
-            self.scheduler_discriminator_feature.step(avg_feature_discriminator_loss)
+            self.scheduler_discriminator.step(avg_discriminator_loss.val)
+            self.scheduler_discriminator_feature.step(avg_feature_discriminator_loss.val)
             self.scheduler_Zdiscriminator_bar.step(avg_barZ_disc_loss.val)
             self.scheduler_Zdiscriminator_phrase.step(avg_phraseZ_disc_loss.val)
 
