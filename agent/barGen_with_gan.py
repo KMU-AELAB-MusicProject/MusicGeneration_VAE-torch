@@ -499,7 +499,7 @@ class BarGen(object):
             self.opt_discriminator_feature.step()
 
             avg_discriminator_loss.update(note_disc_loss)
-            avg_feature_discriminator_loss(feature_disc_loss)
+            avg_feature_discriminator_loss.update(feature_disc_loss)
 
         #################### Generator ####################
         self.free(self.generator)
