@@ -286,8 +286,8 @@ class BarGen(object):
             else:
                 if self.flag_gan:
                     image_sample = self.train_gan(note, pre_note, pre_phrase, position,
-                                                  avg_generator_loss, avg_barZ_disc_loss, avg_phraseZ_disc_loss,
-                                                  avg_discriminator_loss, avg_feature_discriminator_loss,
+                                                  avg_generator_loss, avg_discriminator_loss,
+                                                  avg_feature_discriminator_loss,
                                                   fake_target, valid_target, curr_it)
 
                 else:
@@ -405,7 +405,7 @@ class BarGen(object):
                                 self.loss_phrase(d_phrase_fake, valid_target)
 
             #### Bar Feature ####
-            bar_fake = (torch.randn(z.size(0) * 2, z.size(1)) * self.config.sigma).cuda()
+            bar_fake = (torch.randn(z.size(0), z.size(1)) * self.config.sigma).cuda()
             d_bar_fake = self.z_discriminator_bar(bar_fake).view(-1)
             d_bar_real = self.z_discriminator_bar(z).view(-1)
             barZ_dics_loss = self.loss_bar(d_bar_real, fake_target) + self.loss_bar(d_bar_fake, valid_target)
@@ -455,8 +455,7 @@ class BarGen(object):
         return gen_note[:3]
 
     def train_gan(self, note, pre_note, pre_phrase, position,
-                  avg_generator_loss, avg_barZ_disc_loss, avg_phraseZ_disc_loss,
-                  avg_discriminator_loss, avg_feature_discriminator_loss,
+                  avg_generator_loss, avg_discriminator_loss, avg_feature_discriminator_loss,
                   fake_target, valid_target, curr_it):
         self.generator.train()
         self.discriminator.train()
