@@ -17,8 +17,8 @@ class Model(nn.Module):
 
         self.apply(weights_init)
 
-    def forward(self, note, pre_note, phrase, position, is_train=True):
-        if is_train:
+    def forward(self, note, pre_note, phrase, position, is_note=True):
+        if is_note:
             phrase_feature = self.phrase_encoder(phrase)
 
             z = self.encoder(note)
@@ -32,4 +32,7 @@ class Model(nn.Module):
 
             pre_z = self.encoder(pre_note)
 
-            return self.decoder(note, pre_z, phrase_feature, position)
+            gen_note = self.decoder(note, pre_z, phrase_feature, position)
+            fake_note = torch.gt(gen_note, 0.35).type('torch.cuda.FloatTensor')
+
+            return gen_note, self.encoder(fake_note)

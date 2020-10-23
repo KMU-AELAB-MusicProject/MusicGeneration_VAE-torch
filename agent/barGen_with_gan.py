@@ -509,7 +509,8 @@ class BarGen(object):
         self.frozen(self.z_discriminator_bar)
         self.frozen(self.z_discriminator_phrase)
 
-        gen_note, z, pre_z, phrase_feature, gen_z = self.generator(note, pre_note, pre_phrase, position)
+        noise = torch.normal(0, 1.5, size=(note.size(0), 1152))
+        gen_note, gen_z = self.generator(noise, pre_note, pre_phrase, position, False)
 
         #### Gan Loss ####
         d_note_fake = self.discriminator(torch.cat((pre_note, gen_note), dim=2)).view(-1)
