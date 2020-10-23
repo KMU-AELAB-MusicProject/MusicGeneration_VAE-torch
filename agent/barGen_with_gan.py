@@ -257,6 +257,7 @@ class BarGen(object):
 
         image_sample = None
         origin_image = None
+        Tensor = torch.cuda.FloatTensor
 
         avg_generator_loss = AverageMeter()
         avg_discriminator_loss = AverageMeter()
