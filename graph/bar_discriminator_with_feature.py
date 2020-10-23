@@ -8,7 +8,7 @@ class BarFeatureDiscriminator(nn.Module):
         super(BarFeatureDiscriminator, self).__init__()
 
         self.linear1 = nn.Linear(1152, 512, bias=False)
-        self.linear2 = nn.Linear(96, 1, bias=False)
+        self.linear2 = nn.Linear(512, 1, bias=False)
 
         self.sigmoid = nn.Sigmoid()
 
