@@ -336,12 +336,17 @@ class BarGen(object):
             self.scheduler_Zdiscriminator_bar.step(avg_barZ_disc_loss.val)
             self.scheduler_Zdiscriminator_phrase.step(avg_phraseZ_disc_loss.val)
 
-        self.logger.warning('loss info - generator: {}, barZ disc: {},  phraseZ disc: {}'.format(avg_generator_loss.val,
-                                                                                                 avg_barZ_disc_loss.val,
-                                                                                                 avg_phraseZ_disc_loss.val))
-        self.logger.warning('lr info - generator: {}, barZ disc: {},  phraseZ disc: {}'.format(self.get_lr(self.opt_generator),
-                                                                                               self.get_lr(self.opt_Zdiscriminator_bar),
-                                                                                               self.get_lr(self.opt_Zdiscriminator_phrase)))
+        self.logger.warning(
+            'loss info - gen: {}, barZ disc: {},  phraseZ disc: {}, bar disc: {}, bar_seq disc: {}'.format(
+                avg_generator_loss.val, avg_barZ_disc_loss.val, avg_phraseZ_disc_loss.val,
+                avg_feature_discriminator_loss.val, avg_discriminator_loss.val)
+        )
+        self.logger.warning(
+            'lr info - gen: {}, barZ disc: {},  phraseZ disc: {}, bar disc: {}, bar_seq disc: {}'.format(
+                self.get_lr(self.opt_generator), self.get_lr(self.opt_Zdiscriminator_bar),
+                self.get_lr(self.opt_Zdiscriminator_phrase), self.get_lr(self.opt_discriminator_feature),
+                self.get_lr(self.opt_discriminator))
+        )
 
     def train_pretrain(self, note, pre_note, pre_phrase, position, avg_generator_loss):
         self.generator.train()
