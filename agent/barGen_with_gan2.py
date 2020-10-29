@@ -245,8 +245,8 @@ class BarGen(object):
             self.epoch += 1
             self.train_epoch()
 
-        if self.epoch > self.pretraining_step_size + 20:
-            self.save_checkpoint(self.config.checkpoint_file, self.epoch)
+            if self.epoch > self.pretraining_step_size + 20:
+                self.save_checkpoint(self.config.checkpoint_file, self.epoch)
 
     def train_epoch(self):
         if self.epoch > self.pretraining_step_size:
