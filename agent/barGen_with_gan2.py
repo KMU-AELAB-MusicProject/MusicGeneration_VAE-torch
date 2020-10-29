@@ -193,7 +193,6 @@ class BarGen(object):
 
     def save_checkpoint(self, file_name, epoch):
         tmp_name = os.path.join(self.config.root_path, self.config.checkpoint_dir, 'checkpoint_{}.pth.tar'.format(epoch))
-        # file_name = os.path.join(self.config.root_path, self.config.checkpoint_dir, file_name)
 
         state = {
             'generator_state_dict': self.generator.state_dict(),
@@ -297,7 +296,7 @@ class BarGen(object):
 
         tqdm_batch.close()
 
-        if self.flag_gan and self.train_count >= 100:
+        if self.flag_gan and self.train_count >= 150:
             self.flag_gan = not self.flag_gan
             self.train_count = 0
         elif not self.flag_gan and self.train_count >= 50:
