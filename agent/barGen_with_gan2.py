@@ -285,8 +285,8 @@ class BarGen(object):
             else:
                 if self.flag_gan:
                     image_sample = self.train_add_gan(note, pre_note, pre_phrase, position,
-                                                      avg_generator_loss, avg_discriminator_loss,
-                                                      avg_feature_discriminator_loss,
+                                                      avg_generator_loss, avg_barZ_disc_loss, avg_phraseZ_disc_loss,
+                                                      avg_discriminator_loss, avg_feature_discriminator_loss,
                                                       fake_target, valid_target, curr_it)
 
                 else:
