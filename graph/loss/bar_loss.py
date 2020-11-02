@@ -23,14 +23,14 @@ class Loss(nn.Module):
     def forward(self, logits, labels, is_pretraining=False):
         if is_pretraining:
             recon_loss = self.loss(logits, labels)
-            out = torch.gt(logits, 0.35).type('torch.cuda.FloatTensor')
-            additional_loss = (torch.gt(labels - out, 0.0001).type('torch.cuda.FloatTensor')).sum() * 0.001
-            return recon_loss + additional_loss * 0.001
 
         else:
             smoothed_labels = (labels * 0.82) + self.default_smoothing + self.distribution_smoothing
             recon_loss = self.loss(logits, smoothed_labels)
-            return recon_loss
+
+        out = torch.gt(logits, 0.35).type('torch.cuda.FloatTensor')
+        additional_loss = (torch.gt(labels - out, 0.0001).type('torch.cuda.FloatTensor')).sum() * 0.001
+        return recon_loss + additional_loss * 0.001
 
 
 class DLoss(nn.Module):

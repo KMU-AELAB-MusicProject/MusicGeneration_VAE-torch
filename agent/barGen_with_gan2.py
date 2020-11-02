@@ -545,17 +545,17 @@ class BarGen(object):
         loss += self.loss_bar(d_bar_real1, valid_target) + self.loss_bar(d_bar_real2, valid_target)
 
         #### Generator Loss ####
-        loss += self.loss_generator(gen_note, note, False)
+        loss += self.loss_generator(gen_note, note, False) * 1.1
 
         #### Gan Loss ####
         noise = torch.normal(0, 1.5, size=(note.size(0), 1152))
         gen_note, gen_z = self.generator(noise, pre_note, pre_phrase, position, False)
 
         d_note_fake = self.discriminator(torch.cat((pre_note, gen_note), dim=2)).view(-1)
-        loss += self.loss_disc(d_note_fake, valid_target)
+        loss += self.loss_disc(d_note_fake, valid_target) * 0.8
 
         d_feature_fake = self.discriminator_feature(gen_z).view(-1)
-        loss += self.loss_disc(d_feature_fake, valid_target)
+        loss += self.loss_disc(d_feature_fake, valid_target) * 0.8
 
         loss.backward()
 
