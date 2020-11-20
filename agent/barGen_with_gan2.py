@@ -295,6 +295,14 @@ class BarGen(object):
                                                   fake_target, valid_target, curr_it)
 
         tqdm_batch.close()
+        
+        self.scheduler_generator.step(avg_generator_loss.val)
+        if self.epoch > self.pretraining_step_size:
+            if self.flag_gan:
+                self.scheduler_discriminator.step(avg_discriminator_loss.val)
+                self.scheduler_discriminator_feature.step(avg_feature_discriminator_loss.val)
+            self.scheduler_Zdiscriminator_bar.step(avg_barZ_disc_loss.val)
+            self.scheduler_Zdiscriminator_phrase.step(avg_phraseZ_disc_loss.val)
 
         if self.flag_gan and self.train_count >= 150:
             self.flag_gan = not self.flag_gan
@@ -327,13 +335,6 @@ class BarGen(object):
                 pre_phrase = torch.from_numpy(np.reshape(pre_phrase, [1, 1, 96 * 4, 60])).float().cuda()
 
         self.record_image(image_sample[:3], origin_image[:3], outputs)
-
-        self.scheduler_generator.step(avg_generator_loss.val)
-        if self.epoch > self.pretraining_step_size:
-            self.scheduler_discriminator.step(avg_discriminator_loss.val)
-            self.scheduler_discriminator_feature.step(avg_feature_discriminator_loss.val)
-            self.scheduler_Zdiscriminator_bar.step(avg_barZ_disc_loss.val)
-            self.scheduler_Zdiscriminator_phrase.step(avg_phraseZ_disc_loss.val)
 
         self.logger.warning(
             'loss info - gen: {}, barZ disc: {},  phraseZ disc: {}, bar disc: {}, bar_seq disc: {}'.format(
