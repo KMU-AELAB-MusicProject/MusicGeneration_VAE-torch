@@ -281,18 +281,18 @@ class BarGen(object):
             fake_target = Variable(Tensor(note.size(0)).fill_(0.0), requires_grad=False)
 
             if self.epoch <= self.pretraining_step_size:
-                image_sample = self.train_pretrain(note, pre_note, pre_phrase, position, avg_generator_loss)
+                image_sample = self.train_pretrain(note, pre_note, pre_phrase, position, avg_generator_loss,
+                                                   avg_discriminator_loss, avg_feature_discriminator_loss,
+                                                   fake_target, valid_target, curr_it)
             else:
+                self.train_discriminator(avg_barZ_disc_loss, avg_phraseZ_disc_loss, avg_discriminator_loss,
+                                         avg_feature_discriminator_loss, fake_target, valid_target)
                 if self.flag_gan:
                     image_sample = self.train_add_gan(note, pre_note, pre_phrase, position,
-                                                      avg_generator_loss, avg_barZ_disc_loss, avg_phraseZ_disc_loss,
-                                                      avg_discriminator_loss, avg_feature_discriminator_loss,
-                                                      fake_target, valid_target, curr_it)
-
+                                                      avg_generator_loss, valid_target)
                 else:
                     image_sample = self.train_wae(note, pre_note, pre_phrase, position,
-                                                  avg_generator_loss, avg_barZ_disc_loss, avg_phraseZ_disc_loss,
-                                                  fake_target, valid_target, curr_it)
+                                                  avg_generator_loss, valid_target)
 
         tqdm_batch.close()
         
@@ -348,7 +348,67 @@ class BarGen(object):
                 self.get_lr(self.opt_discriminator))
         )
 
-    def train_pretrain(self, note, pre_note, pre_phrase, position, avg_generator_loss):
+    def train_discriminator(self, avg_barZ_disc_loss, avg_phraseZ_disc_loss, avg_discriminator_loss,
+                            avg_feature_discriminator_loss, fake_target, valid_target):
+        self.free(self.discriminator)
+        self.free(self.discriminator_feature)
+        self.free(self.z_discriminator_bar)
+        self.free(self.z_discriminator_phrase)
+
+        self.frozen(self.generator)
+
+        gen_note, z, pre_z, phrase_feature, gen_z = self.generator(note, pre_note, pre_phrase, position)
+
+        #### Phrase Feature ###
+        phrase_fake = (torch.randn(phrase_feature.size(0), phrase_feature.size(1)) * self.config.sigma).cuda()
+        d_phrase_fake = self.z_discriminator_phrase(phrase_fake).view(-1)
+        d_phrase_real = self.z_discriminator_phrase(phrase_feature).view(-1)
+        phraseZ_dics_loss = self.loss_phrase(d_phrase_real, fake_target) + \
+                            self.loss_phrase(d_phrase_fake, valid_target)
+
+        #### Bar Feature ####
+        bar_fake = (torch.randn(z.size(0), z.size(1)) * self.config.sigma).cuda()
+        d_bar_fake = self.z_discriminator_bar(bar_fake).view(-1)
+        d_bar_real = self.z_discriminator_bar(z).view(-1)
+        barZ_dics_loss = self.loss_bar(d_bar_real, fake_target) + self.loss_bar(d_bar_fake, valid_target)
+
+        #### Note ####
+        fake_note = torch.cat((pre_note, gen_note), dim=2)
+        real_note = torch.cat((pre_note, note), dim=2)
+        d_note_fake = self.discriminator(fake_note).view(-1)
+        d_note_real = self.discriminator(real_note).view(-1)
+        note_disc_loss = self.loss_disc(d_note_real, fake_target) + self.loss_disc(d_note_fake, valid_target)
+
+        #### Note Feature ####
+        d_feature_fake = self.discriminator_feature(gen_z).view(-1)
+        d_feature_real = self.discriminator_feature(z).view(-1)
+        feature_disc_loss = self.loss_disc(d_feature_real, fake_target) + \
+                            self.loss_disc(d_feature_fake, valid_target)
+
+        #######################
+        phraseZ_dics_loss.backward()
+        barZ_dics_loss.backward()
+        note_disc_loss.backward()
+        feature_disc_loss.backward()
+
+        self.opt_Zdiscriminator_bar.step()
+        self.opt_Zdiscriminator_phrase.step()
+        self.opt_discriminator.step()
+        self.opt_discriminator_feature.step()
+
+        avg_barZ_disc_loss.update(barZ_dics_loss)
+        avg_phraseZ_disc_loss.update(phraseZ_dics_loss)
+        avg_discriminator_loss.update(note_disc_loss)
+        avg_feature_discriminator_loss.update(feature_disc_loss)
+
+        self.summary_writer.add_scalar("train-gan/Bar_Z_Discriminator_loss", avg_barZ_disc_loss.val, self.epoch)
+        self.summary_writer.add_scalar("train-gan/Phrase_Z_discriminator_loss", avg_phraseZ_disc_loss.val, self.epoch)
+        self.summary_writer.add_scalar("train-gan/Bar_Discriminator_loss", avg_discriminator_loss.val, self.epoch)
+        self.summary_writer.add_scalar("train-gan/Bar_Feature_discriminator_loss", avg_feature_discriminator_loss.val,
+                                       self.epoch)
+
+    def train_pretrain(self, note, pre_note, pre_phrase, position, avg_generator_loss,
+                       avg_discriminator_loss, avg_feature_discriminator_loss, fake_target, valid_target, curr_it):
         self.generator.train()
         self.discriminator.eval()
         self.discriminator_feature.eval()
@@ -356,6 +416,41 @@ class BarGen(object):
         self.z_discriminator_phrase.eval()
 
         self.generator.zero_grad()
+
+        if (self.epoch + curr_it) % 2:
+            #################### Discriminator ####################
+            self.free(self.discriminator)
+            self.free(self.discriminator_feature)
+
+            self.frozen(self.generator)
+            self.frozen(self.z_discriminator_bar)
+            self.frozen(self.z_discriminator_phrase)
+
+            gen_note, z, pre_z, phrase_feature, gen_z = self.generator(note, pre_note, pre_phrase, position)
+
+            #### Note ####
+            fake_note = torch.cat((pre_note, gen_note), dim=2)
+            real_note = torch.cat((pre_note, note), dim=2)
+            d_note_fake = self.discriminator(fake_note).view(-1)
+            d_note_real = self.discriminator(real_note).view(-1)
+            note_disc_loss = self.loss_disc(d_note_real, fake_target) + self.loss_disc(d_note_fake, valid_target)
+
+            #### Note Feature ####
+            d_feature_fake = self.discriminator_feature(gen_z).view(-1)
+            d_feature_real = self.discriminator_feature(z).view(-1)
+            feature_disc_loss = self.loss_disc(d_feature_real, fake_target) + \
+                                self.loss_disc(d_feature_fake, valid_target)
+
+            #######################
+            note_disc_loss.backward()
+            feature_disc_loss.backward()
+
+            self.opt_discriminator.step()
+            self.opt_discriminator_feature.step()
+
+            avg_discriminator_loss.update(note_disc_loss)
+            avg_feature_discriminator_loss.update(feature_disc_loss)
+
         #################### Generator ####################
         self.free(self.generator)
 
@@ -375,12 +470,13 @@ class BarGen(object):
 
         avg_generator_loss.update(loss)
         self.summary_writer.add_scalar("pre-train/Generator_loss", avg_generator_loss.val, self.epoch)
+        self.summary_writer.add_scalar("train-gan/Bar_Discriminator_loss", avg_discriminator_loss.val, self.epoch)
+        self.summary_writer.add_scalar("train-gan/Bar_Feature_discriminator_loss", avg_feature_discriminator_loss.val,
+                                       self.epoch)
 
         return gen_note[:3]
 
-    def train_wae(self, note, pre_note, pre_phrase, position,
-                  avg_generator_loss, avg_barZ_disc_loss, avg_phraseZ_disc_loss,
-                  fake_target, valid_target, curr_it):
+    def train_wae(self, note, pre_note, pre_phrase, position, avg_generator_loss, valid_target):
         self.generator.train()
         self.z_discriminator_bar.train()
         self.z_discriminator_phrase.train()
@@ -391,39 +487,6 @@ class BarGen(object):
         self.generator.zero_grad()
         self.z_discriminator_bar.zero_grad()
         self.z_discriminator_phrase.zero_grad()
-        if (self.epoch + curr_it) % 2:
-            #################### Discriminator ####################
-            self.free(self.z_discriminator_bar)
-            self.free(self.z_discriminator_phrase)
-
-            self.frozen(self.generator)
-            self.frozen(self.discriminator)
-            self.frozen(self.discriminator_feature)
-
-            _, z, pre_z, phrase_feature, _ = self.generator(note, pre_note, pre_phrase, position)
-
-            #### Phrase Feature ###
-            phrase_fake = (torch.randn(phrase_feature.size(0), phrase_feature.size(1)) * self.config.sigma).cuda()
-            d_phrase_fake = self.z_discriminator_phrase(phrase_fake).view(-1)
-            d_phrase_real = self.z_discriminator_phrase(phrase_feature).view(-1)
-            phraseZ_dics_loss = self.loss_phrase(d_phrase_real, fake_target) + \
-                                self.loss_phrase(d_phrase_fake, valid_target)
-
-            #### Bar Feature ####
-            bar_fake = (torch.randn(z.size(0), z.size(1)) * self.config.sigma).cuda()
-            d_bar_fake = self.z_discriminator_bar(bar_fake).view(-1)
-            d_bar_real = self.z_discriminator_bar(z).view(-1)
-            barZ_dics_loss = self.loss_bar(d_bar_real, fake_target) + self.loss_bar(d_bar_fake, valid_target)
-
-            #######################
-            phraseZ_dics_loss.backward()
-            barZ_dics_loss.backward()
-
-            self.opt_Zdiscriminator_bar.step()
-            self.opt_Zdiscriminator_phrase.step()
-
-            avg_barZ_disc_loss.update(barZ_dics_loss)
-            avg_phraseZ_disc_loss.update(phraseZ_dics_loss)
 
         #################### Generator ####################
         self.free(self.generator)
@@ -454,14 +517,10 @@ class BarGen(object):
         avg_generator_loss.update(loss)
 
         self.summary_writer.add_scalar("train-wae/Generator_loss", avg_generator_loss.val, self.epoch)
-        self.summary_writer.add_scalar("train-wae/Bar_Z_Discriminator_loss", avg_barZ_disc_loss.val, self.epoch)
-        self.summary_writer.add_scalar("train-wae/Phrase_Z_discriminator_loss", avg_phraseZ_disc_loss.val, self.epoch)
 
         return gen_note[:3]
 
-    def train_add_gan(self, note, pre_note, pre_phrase, position,
-                      avg_generator_loss, avg_barZ_disc_loss, avg_phraseZ_disc_loss, avg_discriminator_loss,
-                      avg_feature_discriminator_loss, fake_target, valid_target, curr_it):
+    def train_add_gan(self, note, pre_note, pre_phrase, position, avg_generator_loss, valid_target):
         self.generator.train()
         self.z_discriminator_bar.train()
         self.z_discriminator_phrase.train()
@@ -472,59 +531,6 @@ class BarGen(object):
         self.generator.zero_grad()
         self.z_discriminator_bar.zero_grad()
         self.z_discriminator_phrase.zero_grad()
-        if (self.epoch + curr_it) % 2:
-            #################### Discriminator ####################
-            self.free(self.discriminator)
-            self.free(self.discriminator_feature)
-            self.free(self.z_discriminator_bar)
-            self.free(self.z_discriminator_phrase)
-
-            self.frozen(self.generator)
-
-
-            gen_note, z, pre_z, phrase_feature, gen_z = self.generator(note, pre_note, pre_phrase, position)
-
-            #### Phrase Feature ###
-            phrase_fake = (torch.randn(phrase_feature.size(0), phrase_feature.size(1)) * self.config.sigma).cuda()
-            d_phrase_fake = self.z_discriminator_phrase(phrase_fake).view(-1)
-            d_phrase_real = self.z_discriminator_phrase(phrase_feature).view(-1)
-            phraseZ_dics_loss = self.loss_phrase(d_phrase_real, fake_target) + \
-                                self.loss_phrase(d_phrase_fake, valid_target)
-
-            #### Bar Feature ####
-            bar_fake = (torch.randn(z.size(0), z.size(1)) * self.config.sigma).cuda()
-            d_bar_fake = self.z_discriminator_bar(bar_fake).view(-1)
-            d_bar_real = self.z_discriminator_bar(z).view(-1)
-            barZ_dics_loss = self.loss_bar(d_bar_real, fake_target) + self.loss_bar(d_bar_fake, valid_target)
-
-            #### Note ####
-            fake_note = torch.cat((pre_note, gen_note), dim=2)
-            real_note = torch.cat((pre_note, note), dim=2)
-            d_note_fake = self.discriminator(fake_note).view(-1)
-            d_note_real = self.discriminator(real_note).view(-1)
-            note_disc_loss = self.loss_disc(d_note_real, fake_target) + self.loss_disc(d_note_fake, valid_target)
-
-            #### Note Feature ####
-            d_feature_fake = self.discriminator_feature(gen_z).view(-1)
-            d_feature_real = self.discriminator_feature(z).view(-1)
-            feature_disc_loss = self.loss_disc(d_feature_real, fake_target) + \
-                                self.loss_disc(d_feature_fake, valid_target)
-
-            #######################
-            phraseZ_dics_loss.backward()
-            barZ_dics_loss.backward()
-            note_disc_loss.backward()
-            feature_disc_loss.backward()
-
-            self.opt_Zdiscriminator_bar.step()
-            self.opt_Zdiscriminator_phrase.step()
-            self.opt_discriminator.step()
-            self.opt_discriminator_feature.step()
-
-            avg_barZ_disc_loss.update(barZ_dics_loss)
-            avg_phraseZ_disc_loss.update(phraseZ_dics_loss)
-            avg_discriminator_loss.update(note_disc_loss)
-            avg_feature_discriminator_loss.update(feature_disc_loss)
 
         #################### Generator ####################
         self.free(self.generator)
@@ -565,10 +571,5 @@ class BarGen(object):
         avg_generator_loss.update(loss)
 
         self.summary_writer.add_scalar("train-gan/Generator_loss", avg_generator_loss.val, self.epoch)
-        self.summary_writer.add_scalar("train-gan/Bar_Z_Discriminator_loss", avg_barZ_disc_loss.val, self.epoch)
-        self.summary_writer.add_scalar("train-gan/Phrase_Z_discriminator_loss", avg_phraseZ_disc_loss.val, self.epoch)
-        self.summary_writer.add_scalar("train-gan/Bar_Discriminator_loss", avg_discriminator_loss.val, self.epoch)
-        self.summary_writer.add_scalar("train-gan/Bar_Feature_discriminator_loss", avg_feature_discriminator_loss.val,
-                                       self.epoch)
 
         return gen_note[:3]
