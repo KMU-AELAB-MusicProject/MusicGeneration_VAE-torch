@@ -297,17 +297,16 @@ class BarGen(object):
         tqdm_batch.close()
         
         self.scheduler_generator.step(avg_generator_loss.val)
+        self.scheduler_discriminator.step(avg_discriminator_loss.val)
+        self.scheduler_discriminator_feature.step(avg_feature_discriminator_loss.val)
         if self.epoch > self.pretraining_step_size:
-            if self.flag_gan:
-                self.scheduler_discriminator.step(avg_discriminator_loss.val)
-                self.scheduler_discriminator_feature.step(avg_feature_discriminator_loss.val)
             self.scheduler_Zdiscriminator_bar.step(avg_barZ_disc_loss.val)
             self.scheduler_Zdiscriminator_phrase.step(avg_phraseZ_disc_loss.val)
 
-        if self.flag_gan and self.train_count >= 150:
+        if self.flag_gan and self.train_count >= 160:
             self.flag_gan = not self.flag_gan
             self.train_count = 0
-        elif not self.flag_gan and self.train_count >= 50:
+        elif not self.flag_gan and self.train_count >= 40:
             self.flag_gan = not self.flag_gan
             self.train_count = 0
 
@@ -410,8 +409,8 @@ class BarGen(object):
     def train_pretrain(self, note, pre_note, pre_phrase, position, avg_generator_loss,
                        avg_discriminator_loss, avg_feature_discriminator_loss, fake_target, valid_target, curr_it):
         self.generator.train()
-        self.discriminator.eval()
-        self.discriminator_feature.eval()
+        self.discriminator.train()
+        self.discriminator_feature.train()
         self.z_discriminator_bar.eval()
         self.z_discriminator_phrase.eval()
 
