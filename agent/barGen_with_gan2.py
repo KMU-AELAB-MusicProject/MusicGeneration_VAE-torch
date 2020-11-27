@@ -418,7 +418,7 @@ class BarGen(object):
 
         self.generator.zero_grad()
 
-        if (self.epoch + curr_it) % 2:
+        if self.epoch > 150 and (self.epoch + curr_it) % 2:
             #################### Discriminator ####################
             self.free(self.discriminator)
             self.free(self.discriminator_feature)
