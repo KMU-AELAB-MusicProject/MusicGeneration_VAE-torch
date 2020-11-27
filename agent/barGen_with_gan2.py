@@ -285,7 +285,8 @@ class BarGen(object):
                                                    avg_discriminator_loss, avg_feature_discriminator_loss,
                                                    fake_target, valid_target, curr_it)
             else:
-                self.train_discriminator(avg_barZ_disc_loss, avg_phraseZ_disc_loss, avg_discriminator_loss,
+                self.train_discriminator(note, pre_note, pre_phrase, position,
+                                         avg_barZ_disc_loss, avg_phraseZ_disc_loss, avg_discriminator_loss,
                                          avg_feature_discriminator_loss, fake_target, valid_target)
                 if self.flag_gan:
                     image_sample = self.train_add_gan(note, pre_note, pre_phrase, position,
@@ -347,7 +348,8 @@ class BarGen(object):
                 self.get_lr(self.opt_discriminator))
         )
 
-    def train_discriminator(self, avg_barZ_disc_loss, avg_phraseZ_disc_loss, avg_discriminator_loss,
+    def train_discriminator(self,note, pre_note, pre_phrase, position,
+                            avg_barZ_disc_loss, avg_phraseZ_disc_loss, avg_discriminator_loss,
                             avg_feature_discriminator_loss, fake_target, valid_target):
         self.free(self.discriminator)
         self.free(self.discriminator_feature)
