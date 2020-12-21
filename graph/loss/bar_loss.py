@@ -29,8 +29,8 @@ class Loss(nn.Module):
             recon_loss = self.loss(logits, smoothed_labels)
 
         out = torch.gt(logits, 0.35).type('torch.cuda.FloatTensor')
-        additional_loss = (torch.gt(labels - out, 0.0001).type('torch.cuda.FloatTensor')).sum() * 0.00005
-        return recon_loss + additional_loss
+        additional_loss = (torch.gt(labels - out, 0.0001).type('torch.cuda.FloatTensor')).sum() * 0.0001
+        return (recon_loss + additional_loss) * 1.2
 
 
 class DLoss(nn.Module):

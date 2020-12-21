@@ -85,6 +85,7 @@ class DeConvModule(nn.Module):
         self.cbam = CBAM(out_channel)
 
         self.relu = nn.ReLU(inplace=True)
+        self.sigmoid = nn.Sigmoid()
 
         self.apply(weights_init)
 
@@ -104,7 +105,7 @@ class DeConvModule(nn.Module):
 
         out = out + self.cbam(out)
 
-        out = self.relu(out)
+        out = self.sigmoid(out)
 
         return out
 
