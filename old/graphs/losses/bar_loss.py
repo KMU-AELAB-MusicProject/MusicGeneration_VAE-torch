@@ -11,7 +11,7 @@ class Loss(nn.Module):
         recon_loss = self.loss(logits, labels)
         elbo = (torch.sum(1 + var - mean.pow(2) - var.exp()) + torch.sum(1 + var - pre_mean.pow(2) - pre_var.exp())) / 2
 
-        out = torch.gt(logits, 0.35).type('torch.cuda.FloatTensor')
+        out = torch.gt(logits, 0.3).type('torch.cuda.FloatTensor')
         additional_loss = (torch.gt(labels - out, 0.0001).type('torch.cuda.FloatTensor')).mean()
 
         # reconstruction error + KLD + gan_loss
@@ -26,7 +26,7 @@ class LossDistance(nn.Module):
         recon_loss = self.loss(logits, labels)
         elbo = (torch.sum(1 + var - mean.pow(2) - var.exp()) + torch.sum(1 + var - pre_mean.pow(2) - pre_var.exp())) / 2
 
-        out = torch.gt(logits, 0.35).type('torch.cuda.FloatTensor')
+        out = torch.gt(logits, 0.3).type('torch.cuda.FloatTensor')
         additional_loss = (torch.gt(labels - out, 0.0001).type('torch.cuda.FloatTensor')).mean()
 
         # reconstruction error + KLD + gan_loss
@@ -40,7 +40,7 @@ class PhraseLoss(nn.Module):
     def forward(self, logits, labels, mean, var):
         recon_loss = self.loss(logits, labels)
 
-        out = torch.gt(logits, 0.35).type('torch.cuda.FloatTensor')
+        out = torch.gt(logits, 0.3).type('torch.cuda.FloatTensor')
         additional_loss = (torch.gt(labels - out, 0.0001).type('torch.cuda.FloatTensor')).mean()
 
         # reconstruction error + KLD + gan_loss

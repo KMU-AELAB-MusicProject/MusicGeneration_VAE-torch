@@ -25,7 +25,7 @@ class Model(nn.Module):
             pre_z = self.encoder(pre_note)
 
             gen_note = self.decoder(z, pre_z, phrase_feature, position)
-            fake_note = torch.gt(gen_note, 0.35).type('torch.cuda.FloatTensor')
+            fake_note = torch.gt(gen_note, 0.3).type('torch.cuda.FloatTensor')
             return gen_note, z, pre_z, phrase_feature, self.encoder(fake_note)
         else:
             phrase_feature = self.phrase_encoder(phrase)
@@ -33,6 +33,6 @@ class Model(nn.Module):
             pre_z = self.encoder(pre_note)
 
             gen_note = self.decoder(note, pre_z, phrase_feature, position)
-            fake_note = torch.gt(gen_note, 0.35).type('torch.cuda.FloatTensor')
+            fake_note = torch.gt(gen_note, 0.3).type('torch.cuda.FloatTensor')
 
             return gen_note, self.encoder(fake_note)

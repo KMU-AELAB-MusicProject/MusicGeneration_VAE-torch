@@ -276,7 +276,7 @@ class BarGen(object):
                                  self.loss_disc(d_bar_fake, fake_target_double)
 
                 #### Generated Bar ####
-                fake_note = torch.gt(gen_note, 0.35).type('torch.cuda.FloatTensor')
+                fake_note = torch.gt(gen_note, 0.3).type('torch.cuda.FloatTensor')
                 fake_note = torch.cat((pre_note, fake_note), dim=2)
                 d_fake = self.discriminator(fake_note).view(-1)
 
@@ -317,7 +317,7 @@ class BarGen(object):
                 gen_loss += self.loss_disc(self.z_discriminator_bar(z).view(-1), valid_target) + \
                             self.loss_disc(self.z_discriminator_bar(pre_z).view(-1), valid_target)
 
-                fake_note = torch.gt(gen_note, 0.35).type('torch.cuda.FloatTensor')
+                fake_note = torch.gt(gen_note, 0.3).type('torch.cuda.FloatTensor')
                 fake_note = torch.cat((pre_note, fake_note), dim=2)
                 d_fake = self.discriminator(fake_note).view(-1)
 
@@ -348,7 +348,7 @@ class BarGen(object):
         self.summary_writer.add_image("generated/sample 1_2", image_sample[1].reshape(1, 96, 60), self.epoch)
         self.summary_writer.add_image("generated/sample 1_3", image_sample[2].reshape(1, 96, 60), self.epoch)
 
-        image_sample = torch.gt(image_sample, 0.35).type('torch.cuda.FloatTensor')
+        image_sample = torch.gt(image_sample, 0.3).type('torch.cuda.FloatTensor')
 
         self.summary_writer.add_image("generated/sample 2_1", image_sample[0].reshape(1, 96, 60), self.epoch)
         self.summary_writer.add_image("generated/sample 2_2", image_sample[1].reshape(1, 96, 60), self.epoch)

@@ -304,7 +304,7 @@ class BarGen(object):
         self.summary_writer.add_image("train/sample 2", image_sample[1].reshape(1, 96, 60), self.epoch)
         self.summary_writer.add_image("train/sample 3", image_sample[2].reshape(1, 96, 60), self.epoch)
 
-        image_sample = torch.gt(image_sample, 0.35).type('torch.cuda.FloatTensor')
+        image_sample = torch.gt(image_sample, 0.3).type('torch.cuda.FloatTensor')
 
         self.summary_writer.add_image("train/sample_binarization 1", image_sample[0].reshape(1, 96, 60), self.epoch)
         self.summary_writer.add_image("train/sample_binarization 2", image_sample[1].reshape(1, 96, 60), self.epoch)
@@ -328,7 +328,7 @@ class BarGen(object):
                 for _ in range(4):
                     pre_bar = self.generator(torch.randn(1, 1152, dtype=torch.float32).cuda(), pre_bar.cuda(),
                                              pre_phrase, torch.from_numpy(np.array([phrase_idx[idx]])), False)
-                    pre_bar = torch.gt(pre_bar, 0.35).type('torch.FloatTensor')  # 1, 1, 96, 96
+                    pre_bar = torch.gt(pre_bar, 0.3).type('torch.FloatTensor')  # 1, 1, 96, 96
                     bar_set.append(np.reshape(pre_bar.numpy(), [96, 60]))
 
                 pre_phrase = np.concatenate(bar_set, axis=0)

@@ -265,7 +265,7 @@ class MCWAE(object):
 
         out_img = self.model(self.fixed_noise, self.zero_note, torch.tensor([330], dtype=torch.long).cuda(), False)
         self.summary_writer.add_image('train/generated_image',
-                                      torch.gt(out_img, 0.35).type('torch.FloatTensor').view(1, 384, 96) * 255,
+                                      torch.gt(out_img, 0.3).type('torch.FloatTensor').view(1, 384, 96) * 255,
                                       self.current_iteration)
 
         tqdm_batch.close()

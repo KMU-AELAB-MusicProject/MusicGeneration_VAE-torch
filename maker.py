@@ -36,7 +36,7 @@ phrase_idx = [330] + [i for i in range(args.music_length - 2, -1, -1)]
 for idx in range(args.music_length):
     pre_phrase = model(torch.randn(1, 510, dtype=torch.float32).cuda(), pre_phrase.cuda(),
                        torch.tensor([phrase_idx[idx]], dtype=torch.long).cuda(), False)
-    pre_phrase = torch.gt(pre_phrase, 0.35).type('torch.FloatTensor')
+    pre_phrase = torch.gt(pre_phrase, 0.3).type('torch.FloatTensor')
     outputs.append(np.reshape(pre_phrase.numpy(), [96 * 4, 96, 1]))
 
 ##### set note size #####
