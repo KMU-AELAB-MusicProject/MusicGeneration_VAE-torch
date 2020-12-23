@@ -36,13 +36,13 @@ class BarGen(object):
         self.train_count = 0
 
         self.pretraining_step_size = self.config.pretraining_step_size
-        self.batch_size = self.config.batch_size
+        self.batch_size = self.config.batch_size + 2
         
         self.logger = self.set_logger()
 
         # define dataloader
         self.dataset = NoteDataset(self.config.root_path, self.config)
-        self.dataloader = DataLoader(self.dataset, batch_size=self.batch_size + 2, shuffle=False, num_workers=1,
+        self.dataloader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=False, num_workers=1,
                                      pin_memory=self.config.pin_memory, collate_fn=self.make_batch)
 
         # define models ( generator and discriminator)
@@ -248,6 +248,7 @@ class BarGen(object):
             if self.epoch > self.pretraining_step_size + 20:
                 self.save_checkpoint(self.config.checkpoint_file, self.epoch)
             if self.epoch == self.pretraining_step_size:
+                self.batch_size -= 2
                 self.dataloader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=False, num_workers=1,
                                              pin_memory=self.config.pin_memory, collate_fn=self.make_batch)
 
