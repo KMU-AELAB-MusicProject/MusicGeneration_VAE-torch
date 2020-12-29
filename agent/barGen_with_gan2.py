@@ -503,10 +503,10 @@ class BarGen(object):
         gen_note, gen_z = self.generator(noise, pre_note, pre_phrase, position, False)
 
         d_note_fake = self.discriminator(torch.cat((pre_note, gen_note), dim=2)).view(-1)
-        loss += self.loss_disc(d_note_fake, valid_target) * 0.1
+        loss += self.loss_disc(d_note_fake, valid_target) * 0.05
 
         d_feature_fake = self.discriminator_feature(gen_z).view(-1)
-        loss += self.loss_disc(d_feature_fake, valid_target) * 0.1
+        loss += self.loss_disc(d_feature_fake, valid_target) * 0.05
 
         loss.backward()
 
