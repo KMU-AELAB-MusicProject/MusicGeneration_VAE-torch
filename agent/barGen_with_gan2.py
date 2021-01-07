@@ -368,7 +368,8 @@ class BarGen(object):
         barZ_dics_loss = self.loss_bar(d_bar_real, fake_target) + self.loss_bar(d_bar_fake, valid_target)
 
         #### Note ####
-        fake_note = torch.cat((pre_note, gen_note), dim=2)
+        out = torch.gt(gen_note, 0.3).type('torch.cuda.FloatTensor')
+        fake_note = torch.cat((pre_note, out), dim=2)
         real_note = torch.cat((pre_note, note), dim=2)
         d_note_fake = self.discriminator(fake_note).view(-1)
         d_note_real = self.discriminator(real_note).view(-1)
@@ -502,7 +503,8 @@ class BarGen(object):
         noise = torch.normal(0, 1.5, size=(note.size(0), 1152))
         gen_note, gen_z = self.generator(noise, pre_note, pre_phrase, position, False)
 
-        d_note_fake = self.discriminator(torch.cat((pre_note, gen_note), dim=2)).view(-1)
+        out = torch.gt(gen_note, 0.3).type('torch.cuda.FloatTensor')
+        d_note_fake = self.discriminator(torch.cat((pre_note, out), dim=2)).view(-1)
         loss += self.loss_disc(d_note_fake, valid_target) * 0.05
 
         d_feature_fake = self.discriminator_feature(gen_z).view(-1)
